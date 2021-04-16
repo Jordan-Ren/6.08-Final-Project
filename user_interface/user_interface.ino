@@ -50,7 +50,7 @@ char host[] = "608dev-2.net";
 
 /* CONSTANTS */
 //Prefix to POST request:
-const char PREFIX[] = "{\"config\":{\"encoding\":\"MULAW\",\"sampleRateHertz\":8000,\"languageCode\": \"en-US\", \"speechContexts\":[{\"phrases\":[\"play despacito\",\"pause\", \"skip\"]}]}, \"audio\": {\"content\":\"";
+const char PREFIX[] = "{\"config\":{\"encoding\":\"MULAW\",\"sampleRateHertz\":8000,\"languageCode\": \"en-US\", \"speechContexts\":[{\"phrases\":[\"play despacito\",\"pause\", \"resume\", \"skip\"]}]}, \"audio\": {\"content\":\"";
 const char SUFFIX[] = "\"}}"; //suffix to POST request
 const int AUDIO_IN = A0; //pin where microphone is connected
 const char API_KEY[] = "AIzaSyCwyynsePu7xijUYTOgR7NdVqxH2FAG9DQ"; //don't change this
@@ -129,13 +129,13 @@ void send_request(char * trans) {
   sprintf(request_buffer + strlen(request_buffer), "Host: %s\r\n", host);
   strcat(request_buffer, "Content-Type: application/x-www-form-urlencoded\r\n");
   if (strcmp(trans, "\"pause\"") == 0) {
-    sprintf(body, "group=test&password=test&action=pause&song=None");
+    sprintf(body, "group=test1&password=pass&action=pause&song=None");
   } else if (strcmp(trans, "\"play despacito.\"") == 0) {
-    sprintf(body, "group=test&password=test&action=play&song=despacito");
+    sprintf(body, "group=test1&password=pass&action=play&song=despacito");
   } else if (strcmp(trans, "\"skip\"") == 0) {
-    sprintf(body, "group=test&password=test&action=skip&song=None");
+    sprintf(body, "group=test1&password=pass&action=skip&song=None");
   } else if (strcmp(trans, "\"resume\"") == 0) {
-    sprintf(body, "group=test&password=test&action=resume&song=None");
+    sprintf(body, "group=test1&password=pass&action=resume&song=None");
   } else {
     sprintf(response_buffer, "Command: %s is invalid. Try again.", trans);
   }
