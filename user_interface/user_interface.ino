@@ -41,12 +41,16 @@ const int GREEN = 14;
 const int BLUE = 32;
 
 const uint16_t RESPONSE_TIMEOUT = 6000;
-const uint16_t OUT_BUFFER_SIZE = 1000; //size of buffer to hold HTTP response
+const uint16_t IN_BUFFER_SIZE = 3000; //size of buffer to hold HTTP request
+const uint16_t OUT_BUFFER_SIZE = 3000; //size of buffer to hold HTTP response
+char request_buffer[IN_BUFFER_SIZE]; //char array buffer to hold HTTP request
+char response_buffer[OUT_BUFFER_SIZE]; //char array buffer to hold HTTP response
 char response[OUT_BUFFER_SIZE]; //char array buffer to hold HTTP request
+char host[] = "608dev-2.net";
 
 /* CONSTANTS */
 //Prefix to POST request:
-const char PREFIX[] = "{\"config\":{\"encoding\":\"MULAW\",\"sampleRateHertz\":8000,\"languageCode\": \"en-US\", \"speechContexts\":[{\"phrases\":[\"blue\",\"red\"]}]}, \"audio\": {\"content\":\"";
+const char PREFIX[] = "{\"config\":{\"encoding\":\"MULAW\",\"sampleRateHertz\":8000,\"languageCode\": \"en-US\", \"speechContexts\":[{\"phrases\":[\"play despacito\",\"pause\", \"skip\"]}]}, \"audio\": {\"content\":\"";
 const char SUFFIX[] = "\"}}"; //suffix to POST request
 const int AUDIO_IN = A0; //pin where microphone is connected
 const char API_KEY[] = "AIzaSyCwyynsePu7xijUYTOgR7NdVqxH2FAG9DQ"; //don't change this
@@ -115,6 +119,73 @@ void setup() {
 
 //main body of code
 void loop() {
+  audio_control();
+}
+
+void send_request(char * trans) {
+  tft.fillScreen(TFT_BLACK);
+  char body[100]; //I need to be changed.
+  sprintf(request_buffer, "POST /sandbox/sc/jordanr1/lab08a/lab08a.py HTTP/1.1\r\n");
+  sprintf(request_buffer + strlen(request_buffer), "Host: %s\r\n", host);
+  strcat(request_buffer, "Content-Type: application/x-www-form-urlencoded\r\n");
+  if (strcmp(trans, "\"pause\"") == 0) {
+    sprintf(body, "group=test&password=test&action=pause&song=None");
+    sprintf(request_buffer + strlen(request_buffer), "Content-Length: %d\r\n\r\n", strlen(body));
+    strcat(request_buffer, body);
+    do_http_request(host, request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
+    Serial.println(response_buffer);
+  } else if (strcmp(trans, "\"play despacito.\"") == 0) {
+    sprintf(body, "group=test&password=test&action=play&song=despacito");
+    sprintf(request_buffer + strlen(request_buffer), "Content-Length: %d\r\n\r\n", strlen(body));
+    strcat(request_buffer, body);
+    do_http_request(host, request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
+    Serial.println(response_buffer);
+  } else if (strcmp(trans, "\"skip\"") == 0) {
+    sprintf(body, "group=test&password=test&action=skip&song=None");
+    sprintf(request_buffer + strlen(request_buffer), "Content-Length: %d\r\n\r\n", strlen(body));
+    strcat(request_buffer, body);
+    do_http_request(host, request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
+    Serial.println(response_buffer);
+  } else {
+    sprintf(response_buffer, "Command: %s is invalid. Try again.", trans);
+  }
+  tft.setCursor(0,0);
+  tft.println(response_buffer);
+}
+
+//function used to record audio at sample rate for a fixed nmber of samples
+void record_audio() {
+  int sample_num = 0;    // counter for samples
+  int enc_index = strlen(PREFIX) - 1;  // index counter for encoded samples
+  float time_between_samples = 1000000 / SAMPLE_FREQ;
+  int value = 0;
+  char raw_samples[3];   // 8-bit raw sample data array
+  memset(speech_data, 0, sizeof(speech_data));
+  sprintf(speech_data, "%s", PREFIX);
+  char holder[5] = {0};
+  Serial.println("starting");
+  uint32_t text_index = enc_index;
+  uint32_t start = millis();
+  time_since_sample = micros();
+  while (sample_num < NUM_SAMPLES && digitalRead(PIN_1) == 0) { //read in NUM_SAMPLES worth of audio data
+    value = analogRead(AUDIO_IN);  //make measurement
+    raw_samples[sample_num % 3] = mulaw_encode(value - 1551); //remove 1.25V offset (from 12 bit reading)
+    sample_num++;
+    if (sample_num % 3 == 0) {
+      base64_encode(holder, raw_samples, 3);
+      strncat(speech_data + text_index, holder, 4);
+      text_index += 4;
+    }
+    // wait till next time to read
+    while (micros() - time_since_sample <= time_between_samples); //wait...
+    time_since_sample = micros();
+  }
+  Serial.println(millis() - start);
+  sprintf(speech_data + strlen(speech_data), "%s", SUFFIX);
+  Serial.println("out");
+}
+
+void audio_control() {
   button_state = digitalRead(PIN_1);
   if (!button_state && button_state != old_button_state) {
     Serial.println("listening...");
@@ -199,7 +270,7 @@ void loop() {
         for(int i = 0; i < sizeof(transcript); i++)
           transcript[i] = tolower(transcript[i]);
         Serial.println(transcript);
-        change_led(transcript);
+        send_request(transcript);
       }
       Serial.println("-----------");
       client.stop();
@@ -207,68 +278,4 @@ void loop() {
     }
   }
   old_button_state = button_state;
-}
-
-void change_led(char * trans) {
-  if (strstr(trans, "red") != NULL) {
-    digitalWrite(RED, HIGH);
-    digitalWrite(GREEN, LOW);
-    digitalWrite(BLUE, LOW);
-  } else if (strstr(trans, "blue") != NULL) {
-    digitalWrite(RED, LOW);
-    digitalWrite(GREEN, LOW);
-    digitalWrite(BLUE, HIGH);
-  } else if (strstr(trans, "green") != NULL) {
-    digitalWrite(RED, LOW);
-    digitalWrite(GREEN, HIGH);
-    digitalWrite(BLUE, LOW);
-  } else if (strstr(trans, "purple") != NULL) {
-    digitalWrite(RED, HIGH);
-    digitalWrite(GREEN, LOW);
-    digitalWrite(BLUE, HIGH);
-  } else if (strstr(trans, "yellow") != NULL) {
-    digitalWrite(RED, HIGH);
-    digitalWrite(GREEN, HIGH);
-    digitalWrite(BLUE, LOW);
-  } else if (strstr(trans, "cyan") != NULL) {
-    digitalWrite(RED, LOW);
-    digitalWrite(GREEN, HIGH);
-    digitalWrite(BLUE, HIGH);
-  } else if (strstr(trans, "white") != NULL) {
-    digitalWrite(RED, HIGH);
-    digitalWrite(GREEN, HIGH);
-    digitalWrite(BLUE, HIGH);
-  }  
-}
-
-//function used to record audio at sample rate for a fixed nmber of samples
-void record_audio() {
-  int sample_num = 0;    // counter for samples
-  int enc_index = strlen(PREFIX) - 1;  // index counter for encoded samples
-  float time_between_samples = 1000000 / SAMPLE_FREQ;
-  int value = 0;
-  char raw_samples[3];   // 8-bit raw sample data array
-  memset(speech_data, 0, sizeof(speech_data));
-  sprintf(speech_data, "%s", PREFIX);
-  char holder[5] = {0};
-  Serial.println("starting");
-  uint32_t text_index = enc_index;
-  uint32_t start = millis();
-  time_since_sample = micros();
-  while (sample_num < NUM_SAMPLES && digitalRead(PIN_1) == 0) { //read in NUM_SAMPLES worth of audio data
-    value = analogRead(AUDIO_IN);  //make measurement
-    raw_samples[sample_num % 3] = mulaw_encode(value - 1551); //remove 1.25V offset (from 12 bit reading)
-    sample_num++;
-    if (sample_num % 3 == 0) {
-      base64_encode(holder, raw_samples, 3);
-      strncat(speech_data + text_index, holder, 4);
-      text_index += 4;
-    }
-    // wait till next time to read
-    while (micros() - time_since_sample <= time_between_samples); //wait...
-    time_since_sample = micros();
-  }
-  Serial.println(millis() - start);
-  sprintf(speech_data + strlen(speech_data), "%s", SUFFIX);
-  Serial.println("out");
 }
