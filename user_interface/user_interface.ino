@@ -125,30 +125,24 @@ void loop() {
 void send_request(char * trans) {
   tft.fillScreen(TFT_BLACK);
   char body[100]; //I need to be changed.
-  sprintf(request_buffer, "POST /sandbox/sc/jordanr1/lab08a/lab08a.py HTTP/1.1\r\n");
+  sprintf(request_buffer, "POST /sandbox/sc/jordanr1/final/server.py HTTP/1.1\r\n");
   sprintf(request_buffer + strlen(request_buffer), "Host: %s\r\n", host);
   strcat(request_buffer, "Content-Type: application/x-www-form-urlencoded\r\n");
   if (strcmp(trans, "\"pause\"") == 0) {
     sprintf(body, "group=test&password=test&action=pause&song=None");
-    sprintf(request_buffer + strlen(request_buffer), "Content-Length: %d\r\n\r\n", strlen(body));
-    strcat(request_buffer, body);
-    do_http_request(host, request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
-    Serial.println(response_buffer);
   } else if (strcmp(trans, "\"play despacito.\"") == 0) {
     sprintf(body, "group=test&password=test&action=play&song=despacito");
-    sprintf(request_buffer + strlen(request_buffer), "Content-Length: %d\r\n\r\n", strlen(body));
-    strcat(request_buffer, body);
-    do_http_request(host, request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
-    Serial.println(response_buffer);
   } else if (strcmp(trans, "\"skip\"") == 0) {
     sprintf(body, "group=test&password=test&action=skip&song=None");
-    sprintf(request_buffer + strlen(request_buffer), "Content-Length: %d\r\n\r\n", strlen(body));
-    strcat(request_buffer, body);
-    do_http_request(host, request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
-    Serial.println(response_buffer);
+  } else if (strcmp(trans, "\"resume\"") == 0) {
+    sprintf(body, "group=test&password=test&action=resume&song=None");
   } else {
     sprintf(response_buffer, "Command: %s is invalid. Try again.", trans);
   }
+  sprintf(request_buffer + strlen(request_buffer), "Content-Length: %d\r\n\r\n", strlen(body));
+  strcat(request_buffer, body);
+  do_http_request(host, request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
+  Serial.println(response_buffer);
   tft.setCursor(0,0);
   tft.println(response_buffer);
 }
