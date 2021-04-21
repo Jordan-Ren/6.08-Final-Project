@@ -1,10 +1,11 @@
 import sqlite3
 import datetime
-ht_db = '/var/jail/home/jordanr1/final/songs.db' #assumes you have a lab06b dir in your home dir
+server_user = 'team15'
+ht_db = '/var/jail/home/{server_user}/final/songs.db' #assumes you have a final dir on our server dir
 now = datetime.datetime.now()
 valid_groups = {'test1': "pass", 'test2': "pass2"}
 
-def request_handler(request):
+def request_handler(request) -> str:
     if request["method"] == "POST":
         try:
             group = request['form']['group']
