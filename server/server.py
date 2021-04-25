@@ -44,9 +44,7 @@ def request_handler(request):
             return "Incorrect group or password"
 
 
-'''
 req = {'method': 'POST', 'args': [], 'values': {}, 'content-type': 'application/x-www-form-urlencoded', 'is_json': False,
 'data': b'group=test1&password=pass&action=resume&song=None', 'form': {'group': 'test1', 'password': 'pass', 'action':
 'resume', 'song': 'None'}}
 print(request_handler(req))
-'''
