@@ -1,4 +1,5 @@
 #include <SPI.h>
+#include <FastLED.h>
 #include <TFT_eSPI.h>
 #include <WiFiClientSecure.h>
 //WiFiClientSecure is a big library. It can take a bit of time to do that first compile
@@ -36,9 +37,8 @@ const int SAMPLE_FREQ = 8000;                          // Hz, telephone sample r
 const int SAMPLE_DURATION = 5;                        // duration of fixed sampling (seconds)
 const int NUM_SAMPLES = SAMPLE_FREQ * SAMPLE_DURATION;  // number of of samples
 const int ENC_LEN = (NUM_SAMPLES + 2 - ((NUM_SAMPLES + 2) % 3)) / 3 * 4;  // Encoded length of clip
-const int RED = 27;
-const int GREEN = 14;
-const int BLUE = 32;
+const int LED = 25; // Change this as necessary
+CRGB leds[150];
 
 const uint16_t RESPONSE_TIMEOUT = 6000;
 const uint16_t IN_BUFFER_SIZE = 3000; //size of buffer to hold HTTP request
@@ -112,30 +112,38 @@ void setup() {
   timer = millis();
   client.setCACert(CA_CERT); //set cert for https
   old_val = digitalRead(PIN_1);
-  pinMode(BLUE, OUTPUT);
-  pinMode(RED, OUTPUT);
-  pinMode(GREEN, OUTPUT);
+  FastLED.addLeds<WS2812, LED, GRB>(leds, 150);
 }
 
 //main body of code
 void loop() {
   audio_control();
+  led_control();
+}
+
+void led_control() {
+  for (int i = 0; i < 147; i++) {
+    leds[i] = CRGB(100, 0, 0);
+    leds[i+1] = CRGB(0, 100, 0);
+    leds[i+2] = CRGB(0, 0, 100);
+    FastLED.show();
+  }
 }
 
 void send_request(char * trans) {
   tft.fillScreen(TFT_BLACK);
   char body[100]; //I need to be changed.
-  sprintf(request_buffer, "POST /sandbox/sc/jordanr1/final/server.py HTTP/1.1\r\n");
+  sprintf(request_buffer, "POST http://608dev-2.net/sandbox/sc/team15/final/server.py HTTP/1.1\r\n");
   sprintf(request_buffer + strlen(request_buffer), "Host: %s\r\n", host);
   strcat(request_buffer, "Content-Type: application/x-www-form-urlencoded\r\n");
-  if (strcmp(trans, "\"pause\"") == 0) {
-    sprintf(body, "group=test1&password=pass&action=pause&song=None");
+  if (strcmp(trans, "\"pause\"") == 0 || strcmp(trans, "\"pause.\"") == 0) {
+    sprintf(body, "group=test1&password=pass1&action=pause&song=None");
   } else if (strcmp(trans, "\"play despacito.\"") == 0) {
-    sprintf(body, "group=test1&password=pass&action=play&song=despacito");
-  } else if (strcmp(trans, "\"skip\"") == 0) {
-    sprintf(body, "group=test1&password=pass&action=skip&song=None");
-  } else if (strcmp(trans, "\"resume\"") == 0) {
-    sprintf(body, "group=test1&password=pass&action=resume&song=None");
+    sprintf(body, "group=test1&password=pass1&action=play&song=despacito");
+  } else if (strcmp(trans, "\"skip\"") == 0 || strcmp(trans, "\"skip.\"") == 0) {
+    sprintf(body, "group=test1&password=pass1&action=skip&song=None");
+  } else if (strcmp(trans, "\"resume\"") == 0 || strcmp(trans, "\"resume.\"") == 0) {
+    sprintf(body, "group=test1&password=pass1&action=resume&song=None");
   } else {
     sprintf(response_buffer, "Command: %s is invalid. Try again.", trans);
   }
