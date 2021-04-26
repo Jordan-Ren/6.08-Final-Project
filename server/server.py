@@ -2,10 +2,10 @@ import sqlite3
 from sqlite3 import Error
 import datetime
 server_user = 'team15'
-ht_db = f'var/jail/home/{server_user}/final/songs.db' #assumes you have a final dir on our server dir
-local_db = 'songs.db'
+ht_db = f'/var/jail/home/{server_user}/final/songs.db' #assumes you have a final dir on our server dir
+# ht_db = 'songs.db'
 now = datetime.datetime.now()
-valid_groups = {'test1': "pass", 'test2': "pass2"}
+valid_groups = {'test1': "pass1", 'test2': "pass2"}
 
 def request_handler(request) -> str:
     if request["method"] == "POST":
@@ -37,19 +37,15 @@ def request_handler(request) -> str:
         except:
             return "Incorrect content type or form format"
     elif request["method"] == "GET":
-        group = request['values']['group']
-        if group in valid_groups:
-            with sqlite3.connect(ht_db) as c:
-                data = c.execute("""SELECT song FROM queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 4;""", (group,)).fetchall()
-                data = [x[0] for x in data]
-                return data
-        else:
-            return "Incorrect group or password"
-
-
-
-# req = {'method': 'POST', 'args': [], 'values': {}, 'content-type': 'application/x-www-form-urlencoded', 'is_json': False,
-# 'data': b'group=test1&password=pass&action=resume&song=None', 'form': {'group': 'test1', 'password': 'pass', 'action':
-# 'resume', 'song': 'None'}}
-
-# print(request_handler(req))
+        try:
+            group = request['values']['group']
+            if group in valid_groups:
+                with sqlite3.connect(ht_db) as c:
+                    data = c.execute("""SELECT song FROM queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 4;""", (group,)).fetchall()
+                    data = [x[0] for x in data]
+                    return data
+            else:
+                return "Invalid group"
+        except: 
+            return "Specify a group"
+    
