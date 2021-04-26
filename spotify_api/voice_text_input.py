@@ -2,9 +2,9 @@ import requests
 import os
 
 def request_handler(request):
-    if request['method'] =="POST":
-        username = request["form"]["user"]
-        voice_input = request["form"]["voice"]
+    if request['method'] =="GET":
+        username = request["values"]["user"]
+        voice_input = request["values"]["voice"]
 
         song = parse_voice_input(voice_input)
 
@@ -14,7 +14,6 @@ def request_handler(request):
 
     else:
         return "invalid HTTP method for this url."
-    return "hm"
 
 def get_spotify_token():
     CLIENT_ID = os.environ.get('SPOTIFY_CLIENT_ID')
@@ -41,16 +40,19 @@ def get_spotify_token():
 
 
 def parse_voice_input(voice_input):
-    song = "Despacito"
-    return song
+    parsed_voice = voice_input
+    if "play" in voice_input:
+        parsed_voice = parsed_voice.replace('play', '')
+    print(parsed_voice)
+    return parsed_voice.strip()
 
 
 def send_song_name(song):
-    access_token = get_spotify_token()
+    # access_token = get_spotify_token()
     headers = {
         'Authorization': 'Bearer {token}'.format(token=access_token)
     }
-
+    
     BASE_URL = 'https://api.spotify.com/v1/'
     song_search = f"q={song}" # query
     type_of = "type=track" # album , artist, playlist, track, show, episode
@@ -61,14 +63,15 @@ def send_song_name(song):
     # r = requests.get(BASE_URL + 'audio-features/' + track_id, headers=headers)
 
     r = r.json()
-    
+
     if len(r["tracks"]["items"]) > 0:
         track_uri = r["tracks"]["items"][0]["uri"]
+        url = r["tracks"]["items"][0]["external_urls"]["spotify"]
+        return track_uri, url
     else:
         return "Song not found"
 
-    return track_uri
 
 
-# print(get_spotify_token())
-print(send_song_name("Despacito"))
+print(get_spotify_token())
+print(send_song_name(parse_voice_input("play Despacito")))
