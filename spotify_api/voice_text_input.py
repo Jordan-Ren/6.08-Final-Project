@@ -20,8 +20,6 @@ def get_spotify_token():
     CLIENT_SECRET = os.environ.get('SPOTIFY_CLIENT_SECRET')
     if CLIENT_ID == None: CLIENT_ID = os.environ.get('CLIENT_ID')
     if CLIENT_SECRET == None: CLIENT_SECRET = os.environ.get('CLIENT_SECRET')
-    if CLIENT_ID == None: CLIENT_ID='77ff937338ae461084ba3e32a0c5781f'
-    if CLIENT_SECRET == None: CLIENT_SECRET='19a3ef804ac947e5a0a056bfe5f62604'
 
     AUTH_URL = 'https://accounts.spotify.com/api/token'
 
@@ -51,7 +49,6 @@ def parse_voice_input(voice_input):
 
 def send_song_name(song):
     # access_token = get_spotify_token()
-    access_token = 'BQD9_VXT3xjtLSYUiUwh8dMsB9oTLaseg9nIf7qdypnkd3fj9Z7iIPhrN4fMvdNkbGSZ8oOB88VZv1oa2bo'
     headers = {
         'Authorization': 'Bearer {token}'.format(token=access_token)
     }
