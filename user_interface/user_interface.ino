@@ -38,7 +38,8 @@ const int SAMPLE_DURATION = 5;                        // duration of fixed sampl
 const int NUM_SAMPLES = SAMPLE_FREQ * SAMPLE_DURATION;  // number of of samples
 const int ENC_LEN = (NUM_SAMPLES + 2 - ((NUM_SAMPLES + 2) % 3)) / 3 * 4;  // Encoded length of clip
 const int LED = 25; // Change this as necessary
-CRGB leds[150];
+const int NUM_LEDS = 74; // Change this for the length of your LED strip
+CRGB leds[NUM_LEDS];
 
 const uint16_t RESPONSE_TIMEOUT = 6000;
 const uint16_t IN_BUFFER_SIZE = 3000; //size of buffer to hold HTTP request
@@ -112,17 +113,64 @@ void setup() {
   timer = millis();
   client.setCACert(CA_CERT); //set cert for https
   old_val = digitalRead(PIN_1);
-  FastLED.addLeds<WS2812, LED, GRB>(leds, 150);
+  FastLED.addLeds<WS2812, LED, GRB>(leds, NUM_LEDS);
 }
 
 //main body of code
 void loop() {
   audio_control();
-  led_control();
+//  led_control();
+  pulse_to_bpm(100, 0, 0, 125);
+}
+
+void pulse_to_bpm(uint8_t r, uint8_t g, uint8_t b, int bpm) {
+  int de = int((60.0/bpm)*1000*.85); // NOTE: TIMING STILL OFF FIX
+  while (true) {
+    fade_out(r, g, b);
+    delay(de);
+  }
+}
+
+
+void scroll_left(uint8_t r, uint8_t g, uint8_t b) {
+  for (int i=0; i < NUM_LEDS;i++) {
+    leds[i] = CRGB(r, g, b);
+    FastLED.show();
+  }
+}
+
+void scroll_right(uint8_t r, uint8_t g, uint8_t b) {
+  for (int i=NUM_LEDS; i > 0;i--) {
+    leds[i] = CRGB(r, g, b);
+    FastLED.show();
+  }
+}
+
+void set_all(uint8_t r, uint8_t g, uint8_t b) {
+  for (int i=0; i<NUM_LEDS;i++) {
+    leds[i] = CRGB(r, g, b);
+  }
+  FastLED.show();
+}
+
+void fade_out(uint8_t r, uint8_t g, uint8_t b) {
+  uint32_t start = micros();
+  float red;
+  float green;
+  float blue;
+  for (int i=255; i>0; i=i-8) {
+    red = (i/256.0)*r;
+    green = (i/256.0)*g;
+    blue = (i/256.0)*b;
+    set_all(int(red), int(green), int(blue));
+  }
+  set_all(0, 0, 0);
+  uint32_t end_ = micros();
+  Serial.println(end_ - start);
 }
 
 void led_control() {
-  for (int i = 0; i < 147; i++) {
+  for (int i = 0; i < NUM_LEDS-3; i = i+3) {
     leds[i] = CRGB(100, 0, 0);
     leds[i+1] = CRGB(0, 100, 0);
     leds[i+2] = CRGB(0, 0, 100);
