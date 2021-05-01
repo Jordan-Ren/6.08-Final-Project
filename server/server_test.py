@@ -82,7 +82,8 @@ class TestServerDeliverable1(unittest.TestCase):
                 'data': b'group=test2&password=pass2&action=skip&song=None', 
                 'form': {'group': 'test2', 'password': 'pass2', 'action':'skip', 'song': 'None'}
                 }
-        self.assertEqual(request_handler(req), "Handle skip instructions here")
+        res = request_handler(req)
+        self.assertEqual(res, "Handle skip instructions here")
 
     # test no action post request
     def test_post_no_action(self):
@@ -133,5 +134,29 @@ class TestServerDeliverable1(unittest.TestCase):
                 }
         self.assertEqual(request_handler(req)[0], "Despacito")
 
+    def test_skip_with_two_songs(self):
+        req = {
+                'method': 'POST', 
+                'args': [], 
+                'values': {}, 
+                'content-type': 'application/x-www-form-urlencoded', 
+                'is_json': False,
+                'data': b'group=test1&password=pass1&action=play&song=lovefool', 
+                'form': {'group': 'test1', 'password': 'pass1', 'action':'play', 'song': 'lovefool'}
+                }
+        self.assertEqual(request_handler(req), "Song: lovefool added to the queue!")
+        req3 = {
+                'method': 'POST', 
+                'args': [], 
+                'values': {}, 
+                'content-type': 'application/x-www-form-urlencoded', 
+                'is_json': False,
+                'data': b'group=test1&password=pass1&action=finished&song=None', 
+                'form': {'group': 'test1', 'password': 'pass1', 'action':'finished', 'song': 'feverdream'}
+                }
+        print(request_handler(req3))
+
 if __name__ == '__main__':
-    unittest.main()
+    #unittest.main()
+    test = TestServerDeliverable1()
+    test.test_skip_with_two_songs() 

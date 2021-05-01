@@ -3,7 +3,7 @@ from sqlite3 import Error
 import datetime
 server_user = 'team15'
 ht_db = f'/var/jail/home/{server_user}/final/songs.db' #assumes you have a final dir on our server dir
-# ht_db = 'songs.db'
+#ht_db = 'songs.db'
 now = datetime.datetime.now()
 valid_groups = {'test1': "pass1", 'test2': "pass2"}
 
@@ -29,11 +29,24 @@ def request_handler(request) -> str:
                     elif action == "resume":
                         return "Handle resume instructions here"
                     elif action == "skip":
-                        return "Handle skip instructions here"
+                        data = c.execute("""SELECT time_ FROM queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 1;""", (group,)).fetchone()
+                        c.execute("""DELETE FROM queue WHERE time_ = ?""", (data[0][0],))
+                        data = c.execute("""SELECT song FROM queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 1;""", (group,)).fetchone()
+                        next_song = data[0]
+                        return next_song
+                    elif action == "finished":
+                        data = c.execute("""SELECT song, time_ FROM queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 2;""", (group,)).fetchall()                  
+                        if len(data) == 0:
+                            return "No more songs on the queue"
+                        else:
+                            c.execute("""DELETE FROM queue WHERE time_ = ?""", (data[0][1],))
+                        if len(data) == 1:
+                            return "Last song played"
+                        else:
+                            next_song = data[1][0]
+                            return next_song      
                     else:
                         return "No action specified"
-            else:
-                return "Incorrect group or password"
         except:
             return "Incorrect content type or form format"
     elif request["method"] == "GET":
