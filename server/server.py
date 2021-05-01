@@ -33,7 +33,7 @@ def request_handler(request) -> str:
                         c.execute("""DELETE FROM queue WHERE time_ = ?""", (data[0][0],))
                         data = c.execute("""SELECT song FROM queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 1;""", (group,)).fetchone()
                         next_song = data[0]
-                        return next_song
+                        return f'Next song is {next_song}' 
                     elif action == "finished":
                         data = c.execute("""SELECT song, time_ FROM queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 2;""", (group,)).fetchall()                  
                         if len(data) == 0:
@@ -44,7 +44,7 @@ def request_handler(request) -> str:
                             return "Last song played"
                         else:
                             next_song = data[1][0]
-                            return next_song      
+                            return f'Next song is {next_song}'      
                     else:
                         return "No action specified"
         except:
