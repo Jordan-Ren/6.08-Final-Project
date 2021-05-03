@@ -2,8 +2,8 @@ import sqlite3
 from sqlite3 import Error
 import datetime
 server_user = 'team15'
-ht_db = f'/var/jail/home/{server_user}/final/songs.db' #assumes you have a final dir on our server dir
-# ht_db = 'songs.db'
+# ht_db = f'/var/jail/home/{server_user}/final/songs.db' #assumes you have a final dir on our server dir
+ht_db = 'songs.db'
 now = datetime.datetime.now()
 valid_groups = {'test1': "pass1", 'test2': "pass2"}
 
