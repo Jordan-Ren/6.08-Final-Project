@@ -38,7 +38,8 @@ const int SAMPLE_DURATION = 5;                        // duration of fixed sampl
 const int NUM_SAMPLES = SAMPLE_FREQ * SAMPLE_DURATION;  // number of of samples
 const int ENC_LEN = (NUM_SAMPLES + 2 - ((NUM_SAMPLES + 2) % 3)) / 3 * 4;  // Encoded length of clip
 const int LED = 25; // Change this as necessary
-CRGB leds[150];
+const int NUM_LEDS = 74; // Change this for the length of your LED strip
+CRGB leds[NUM_LEDS];
 
 const uint16_t RESPONSE_TIMEOUT = 6000;
 const uint16_t IN_BUFFER_SIZE = 3000; //size of buffer to hold HTTP request
@@ -47,6 +48,7 @@ char request_buffer[IN_BUFFER_SIZE]; //char array buffer to hold HTTP request
 char response_buffer[OUT_BUFFER_SIZE]; //char array buffer to hold HTTP response
 char response[OUT_BUFFER_SIZE]; //char array buffer to hold HTTP request
 char host[] = "608dev-2.net";
+char recorded_transcript[100] = {0};
 
 /* CONSTANTS */
 //Prefix to POST request:
@@ -57,7 +59,12 @@ const char API_KEY[] = "AIzaSyCwyynsePu7xijUYTOgR7NdVqxH2FAG9DQ"; //don't change
 
 
 const uint8_t PIN_1 = 5; //button 1
-const uint8_t PIN_2 = 0; //button 2
+const uint8_t PIN_2 = 19; //button 2
+
+// STATES
+const int IDLE = 0;
+const int RECORDED = 1;
+int state;
 
 
 /* Global variables*/
@@ -112,17 +119,86 @@ void setup() {
   timer = millis();
   client.setCACert(CA_CERT); //set cert for https
   old_val = digitalRead(PIN_1);
-  FastLED.addLeds<WS2812, LED, GRB>(leds, 150);
+  state = IDLE;
+  tft.setCursor(0,0);
+  tft.println("Hold button to record");
+  FastLED.addLeds<WS2812, LED, GRB>(leds, NUM_LEDS);
 }
 
 //main body of code
 void loop() {
-  audio_control();
-  led_control();
+  switch (state) {
+    case IDLE:
+      audio_control();
+      break;
+    case RECORDED:
+      if (digitalRead(PIN_2) == 0) {
+        tft.fillScreen(TFT_BLACK);
+        tft.setCursor(0,0);
+        tft.println("Sending Request...");
+        send_request(recorded_transcript);
+        state = IDLE;
+      }
+      if (digitalRead(PIN_1) == 0) {
+        state = IDLE;
+        tft.fillScreen(TFT_BLACK);
+        tft.setCursor(0,0);
+        tft.println("Hold button to record");
+      }
+      break;
+  }
+//  led_control();
+  //pulse_to_bpm(100, 0, 0, 125);
+}
+
+void pulse_to_bpm(uint8_t r, uint8_t g, uint8_t b, int bpm) {
+  int de = int((60.0/bpm)*1000*.85); // NOTE: TIMING STILL OFF FIX
+  while (true) {
+    fade_out(r, g, b);
+    delay(de);
+  }
+}
+
+
+void scroll_left(uint8_t r, uint8_t g, uint8_t b) {
+  for (int i=0; i < NUM_LEDS;i++) {
+    leds[i] = CRGB(r, g, b);
+    FastLED.show();
+  }
+}
+
+void scroll_right(uint8_t r, uint8_t g, uint8_t b) {
+  for (int i=NUM_LEDS; i > 0;i--) {
+    leds[i] = CRGB(r, g, b);
+    FastLED.show();
+  }
+}
+
+void set_all(uint8_t r, uint8_t g, uint8_t b) {
+  for (int i=0; i<NUM_LEDS;i++) {
+    leds[i] = CRGB(r, g, b);
+  }
+  FastLED.show();
+}
+
+void fade_out(uint8_t r, uint8_t g, uint8_t b) {
+  uint32_t start = micros();
+  float red;
+  float green;
+  float blue;
+  for (int i=255; i>0; i=i-8) {
+    red = (i/256.0)*r;
+    green = (i/256.0)*g;
+    blue = (i/256.0)*b;
+    set_all(int(red), int(green), int(blue));
+  }
+  set_all(0, 0, 0);
+  uint32_t end_ = micros();
+  //Serial.println(end_ - start);
 }
 
 void led_control() {
-  for (int i = 0; i < 147; i++) {
+  for (int i = 0; i < NUM_LEDS-3; i = i+3) {
     leds[i] = CRGB(100, 0, 0);
     leds[i+1] = CRGB(0, 100, 0);
     leds[i+2] = CRGB(0, 0, 100);
@@ -262,6 +338,7 @@ void audio_control() {
       }
       Serial.println(response);
       char* trans_id = strstr(response, "transcript");
+      tft.setCursor(0,0);
       if (trans_id != NULL) {
         char* foll_coll = strstr(trans_id, ":");
         char* starto = foll_coll + 2; //starting index
@@ -272,7 +349,15 @@ void audio_control() {
         for(int i = 0; i < sizeof(transcript); i++)
           transcript[i] = tolower(transcript[i]);
         Serial.println(transcript);
-        send_request(transcript);
+        state = RECORDED;
+        tft.fillScreen(TFT_BLACK);
+        tft.println("Current Action:");
+        tft.println(transcript);
+        sprintf(recorded_transcript, transcript);
+      } else {
+        tft.fillScreen(TFT_BLACK);
+        tft.println("Unable to transcribe.");
+        tft.println("Please re-record audio");
       }
       Serial.println("-----------");
       client.stop();
