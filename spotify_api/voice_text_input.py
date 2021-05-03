@@ -1,6 +1,4 @@
-import requests
 import os
-from dotenv import load_dotenv
 import json
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
@@ -9,7 +7,7 @@ import datetime
 
 server_user = 'team15'
 ht_db = f'/var/jail/home/{server_user}/final/songs.db'
-load_dotenv()
+
 HEADERS = {
     'Authorization': 'Bearer {token}'.format(token=os.environ.get("ACCESS_TOKEN"))
 }
