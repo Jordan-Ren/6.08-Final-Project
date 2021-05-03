@@ -1,8 +1,22 @@
 import requests
 import os
 from dotenv import load_dotenv
+import json
+import spotipy
+from spotipy.oauth2 import SpotifyOAuth
 
 load_dotenv()
+HEADERS = {
+    'Authorization': 'Bearer {token}'.format(token=os.environ.get("ACCESS_TOKEN"))
+}
+BASE_URL = 'https://api.spotify.com/v1/'
+
+scope = "user-read-currently-playing user-top-read user-read-recently-played user-read-playback-state " \
+            "user-modify-playback-state streaming app-remote-control user-library-read"
+
+sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=scope, client_id=os.environ.get('SPOTIFY_CLIENT_ID'),
+                                                client_secret=os.environ.get('SPOTIFY_CLIENT_SECRET'),
+                                               redirect_uri="http://example.com"))
 
 def request_handler(request):
     if request['method'] =="GET":
@@ -24,26 +38,26 @@ def request_handler(request):
     else:
         return "invalid HTTP method for this url."
 
-def get_spotify_token():
-    CLIENT_ID = os.environ.get('SPOTIFY_CLIENT_ID')
-    CLIENT_SECRET = os.environ.get('SPOTIFY_CLIENT_SECRET')
-    if CLIENT_ID == None: CLIENT_ID = os.environ.get('CLIENT_ID')
-    if CLIENT_SECRET == None: CLIENT_SECRET = os.environ.get('CLIENT_SECRET')
-    AUTH_URL = 'https://accounts.spotify.com/api/token'
-
-    # POST
-    auth_response = requests.post(AUTH_URL, {
-        'grant_type': 'client_credentials',
-        'client_id': CLIENT_ID,
-        'client_secret': CLIENT_SECRET,
-    })
-
-    # convert the response to JSON
-    auth_response_data = auth_response.json()
-    # save the access token
-    access_token = auth_response_data['access_token']
-
-    return access_token
+# def get_spotify_token():
+#     CLIENT_ID = os.environ.get('SPOTIFY_CLIENT_ID')
+#     CLIENT_SECRET = os.environ.get('SPOTIFY_CLIENT_SECRET')
+#     if CLIENT_ID == None: CLIENT_ID = os.environ.get('CLIENT_ID')
+#     if CLIENT_SECRET == None: CLIENT_SECRET = os.environ.get('CLIENT_SECRET')
+#     AUTH_URL = 'https://accounts.spotify.com/api/token'
+#
+#     # POST
+#     auth_response = requests.post(AUTH_URL, {
+#         'grant_type': 'client_credentials',
+#         'client_id': CLIENT_ID,
+#         'client_secret': CLIENT_SECRET,
+#     })
+#
+#     # convert the response to JSON
+#     auth_response_data = auth_response.json()
+#     # save the access token
+#     access_token = auth_response_data['access_token']
+#
+#     return access_token
 
 
 def clean_input(voice_input):
@@ -82,47 +96,87 @@ def parse_voice_input(voice_input):
 
 
 def get_song_uri(song):
-    # access_token = get_spotify_token()
-    access_token = os.environ.get("ACCESS_TOKEN")
-    headers = {
-        'Authorization': 'Bearer {token}'.format(token=access_token)
-    }
-    
-    BASE_URL = 'https://api.spotify.com/v1/'
-    song_search = f"q={song}" # query
-    type_of = "type=track" # album , artist, playlist, track, show, episode
-    limit = "&limit=1"
-    r = requests.get(BASE_URL + 'search?' + song_search + "&" + type_of + "&" + limit, headers=headers)
-
-    # track_id = '6y0igZArWVi6Iz0rj35c1Y'
-    # r = requests.get(BASE_URL + 'audio-features/' + track_id, headers=headers)
-
-    r = r.json()
+    res = sp.search(song, limit=1, type="track")
     response_data = {}
-    if len(r["tracks"]["items"]) > 0:
-        response_data['track_uri'] = r["tracks"]["items"][0]["uri"]
-        response_data['url'] = r["tracks"]["items"][0]["external_urls"]["spotify"]
+    if len(res["tracks"]["items"]) > 0:
+        response_data['track_uri'] = res["tracks"]["items"][0]["uri"]
+        response_data['url'] = res["tracks"]["items"][0]["external_urls"]["spotify"]
         return response_data
     else:
         return "Song not found"
+    # # access_token = get_spotify_token()
+    # url = BASE_URL + f"search?q={song}&type=track&limit=1"
+    # r = requests.get(url, headers=HEADERS)
+    #
+    # # track_id = '6y0igZArWVi6Iz0rj35c1Y'
+    # # r = requests.get(BASE_URL + 'audio-features/' + track_id, headers=headers)
+    # r = r.json()
+    # response_data = {}
+    # if len(r["tracks"]["items"]) > 0:
+    #     response_data['track_uri'] = r["tracks"]["items"][0]["uri"]
+    #     response_data['url'] = r["tracks"]["items"][0]["external_urls"]["spotify"]
+    #     return response_data
+    # else:
+    #     return "Song not found"
 
+
+def play_song(song_uri):
+    sp.start_playback(uris=[song_uri], position_ms=0)
+    # url = BASE_URL + "me/player/play"
+    # data = json.dumps({
+    #     "uris": [song_uri],
+    #     "position_ms": 0,
+    # })
+    # res = requests.put(url, headers=HEADERS, data=data)
+    # print(url)
+    # print(data)
+    # print(res.status_code)
+    # print(res.text)
+    # return res.status_code
+
+
+def add_song_to_queue(song_uri):
+    sp.add_to_queue(uri=song_uri)
+
+def pause():
+    sp.pause_playback()
+
+def get_song_analysis(song_uri):
+    res = sp.audio_analysis(track_id=song_uri)
+    print(res)
+
+
+def generate_token():
+    url = "https://accounts.spotify.com/authorize"
+    data = json.dumps({
+        "client_id": os.environ.get("SPOTIFY_CLIENT_ID"),
+        "response_type": "code",
+        "redirect_uri": "https://example.com/callback",
+        "scope": "user-read-private"
+    })
+    print(data)
+    res = requests.get(url, params=data)
+    print(res.url)
+    print(res.status_code)
+    print(res.text)
 
 if __name__ == "__main__":
     # print(get_spotify_token())
-    req = {
-        "method": "GET",
-        "values": {
-            "user": "acelli",
-            "voice": "Play despacito"
-        }
-    }
-    request_handler(req)
-    req2 = {
-        "method": "GET",
-        "values": {
-            "user": "acelli",
-            "voice": "can you play despacito by Luis Fonzi"
-        }
-    }
-    request_handler(req2)
+    # req = {
+    #     "method": "GET",
+    #     "values": {
+    #         "user": "acelli",
+    #         "voice": "Play despacito"
+    #     }
+    # }
+    # request_handler(req)
+    # req2 = {
+    #     "method": "GET",
+    #     "values": {
+    #         "user": "acelli",
+    #         "voice": "can you play despacito by Luis Fonzi"
+    #     }
+    # }
+    # request_handler(req2)
+    play_song("spotify:track:6habFhsOp2NvshLv26DqMb")
 # print(send_song_name(parse_voice_input("play Despacito")))
