@@ -7,11 +7,26 @@
   <h1>Spartify Web Playback</h1>
   <script src="https://sdk.scdn.co/spotify-player.js"></script>
 
-  <h2>Group ID</h2>
+  <!-- <h2>Group ID</h2>
   <p id="groupID"></p>
   <h2>Spartify Queue</h2>
-  <p id="queue"></p>
+  <p id="queue"></p> -->
+  <h1>Spartify Queue</h1>
+  <!-- <form action="http://608dev-2.net/sandbox/sc/team15/final/server.py" method="get">
+    <label for="group">Input Group:</label>
+    <input type="text" id="group" name="group">
+    <input type="submit">
+  </form> -->
 
+  <form id="form" onsubmit="return false">
+    <input type="text" id="userInput" />
+    <input type="submit" onclick="saveGroup();" />
+  </form>
+
+  <!-- <h1>Thermostat Values</h1>
+  <p>Group: {curr_state[0]}</p> -->
+
+  <script type="text/javascript" src="jquery-1.8.1.min.js"></script>
   <script>
     window.onload = function(){
       var groupID = prompt("Input Group ID");
@@ -56,6 +71,12 @@
       // Connect to the player!
       player.connect();
     };
+
+    function saveGroup() {
+    var input = document.getElementById("userInput").value;
+    alert("Group: " + input);
+    }
+
   </script>
 </body>
 </html>
