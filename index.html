@@ -15,18 +15,25 @@
     <input type="submit">
   </form> -->
 
-  <form id="form" onsubmit="return false">
-    <input type="text" id="userInput" />
-    <input type="submit" onclick="saveGroup();" />
+  <form id="form" onsubmit="saveGroup();">
+    Enter Group Name for Spotify Queue: <input type="text" id="userInput" />
+    <input type="submit"/>
   </form>
+
+  <form id="form" onsubmit="getDBQueue();">
+    Enter Group Name for DB Queue: <input type="text" id="userInput" />
+    <input type="submit"/>
+  </form>
+
+
   
   <!-- <h1>Thermostat Values</h1>
   <p>Group: {curr_state[0]}</p> -->
 
-  <script type="text/javascript" src="jquery-1.8.1.min.js"></script>
+  <!-- <script type="text/javascript" src="jquery-1.8.1.min.js"></script> -->
   <script>
     window.onSpotifyWebPlaybackSDKReady = () => {
-      const token = 'BQCXvWm9vD1ZT2xGyFjAj4_EyQ_4fIMtAa_TcMeHcTX7bvfU5kJmiB0hAgx8xDz091SNHOf6JrgwsfE7Od1zsh31bT7y68kYqP0CIR7pY6WryX5GR-lJ7NDY-_D06Tfs7ZrM9gpMWS41jbe2VS6SC1lf9dDRpZAU-NOKuBz6AAJC8etitk1gZn4';
+      const token = 'BQCxjL5H_phFCqSoA_q65fmdKcczyc4KutYG3VnsZLW0uE5QKZo29DCq1hF7SIqfanez4NhdTp_5Rmvffa2rnnGFWKKcJB8mnsRlJ1SCzjfFJekmNqnboDUZrzG7rLq3ec2DsbDMp23PF2GWaxazykdGcZzQLZY7VX1ShaaZDKAI75MShjSinRo';
       const player = new Spotify.Player({
         name: 'Web Player',
         getOAuthToken: cb => { cb(token); }
@@ -58,6 +65,19 @@
     function saveGroup() {
     var input = document.getElementById("userInput").value;
     alert("Group: " + input);
+    }
+
+    function getDBQueue() {
+      const Http = new XMLHttpRequest();
+      const url='http://608dev-2.net/sandbox/sc/team15/final/server.py' + "?" + document.getElementById("userInput").value;
+      console.log(url)
+      Http.open("GET", url);
+      Http.send();
+
+      Http.onreadystatechange = (e) => {
+        console.log(Http.responseText)
+        alert(Http.responseText)
+      }
     }
 
   </script>
