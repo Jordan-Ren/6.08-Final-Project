@@ -4,23 +4,22 @@
   <title>Spotify Web Playback SDK Quick Start Tutorial</title>
 </head>
 <body>
-  <h1>Spotify Web Playback</h1>
-
+  <h1>Spartify Web Playback</h1>
   <script src="https://sdk.scdn.co/spotify-player.js"></script>
 
-  <h1>Spartify Queue</h1>
-  <form action="http://608dev-2.net/sandbox/sc/team15/final/server.py" method="get">
-    <label for="group">Input Group:</label>
-    <input type="text" id="group" name="group">
-    <input type="submit">
-  </form>
-  
-  <!-- <h1>Thermostat Values</h1>
-  <p>Group: {curr_state[0]}</p> -->
+  <h2>Group ID</h2>
+  <p id="groupID"></p>
+  <h2>Spartify Queue</h2>
+  <p id="queue"></p>
 
   <script>
+    window.onload = function(){
+      var groupID = prompt("Input Group ID");
+      document.getElementById('groupID').innerHTML = groupID;
+    };
+
     window.onSpotifyWebPlaybackSDKReady = () => {
-      const token = 'BQCXvWm9vD1ZT2xGyFjAj4_EyQ_4fIMtAa_TcMeHcTX7bvfU5kJmiB0hAgx8xDz091SNHOf6JrgwsfE7Od1zsh31bT7y68kYqP0CIR7pY6WryX5GR-lJ7NDY-_D06Tfs7ZrM9gpMWS41jbe2VS6SC1lf9dDRpZAU-NOKuBz6AAJC8etitk1gZn4';
+      const token = 'BQDNOSp25dWGlKTrVoQYZPEo9CGO9u3ixMEhDVregrDcPEencoMLTZ_cdTmIdShek_0USsQORF3AJ4TtSo78c7Lp_MKTna62Gx0KWPCjWcdAj0v_sQ_mGJFQcY4slHLL8rodh5SpIP_-2ICYQYveWjCqb3vFdwzO-JHiiE8KFKdt0Cstc3YQ-PY';
       const player = new Spotify.Player({
         name: 'Web Player',
         getOAuthToken: cb => { cb(token); }
@@ -33,7 +32,16 @@
       player.addListener('playback_error', ({ message }) => { console.error(message); });
 
       // Playback status updates
-      player.addListener('player_state_changed', state => { console.log(state); });
+      player.addListener('player_state_changed', state => {
+        console.log(state);
+        var tracks = state.track_window.next_tracks;
+        var output = "";
+        console.log("tracks: " + tracks + "\n");
+        for(var i = 0; i < tracks; i++) {
+          output += (tracks[i] + "\n");
+        }
+        console.log("output: " + output + "\n");
+      });
 
       // Ready
       player.addListener('ready', ({ device_id }) => {
