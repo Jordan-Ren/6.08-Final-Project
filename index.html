@@ -7,37 +7,34 @@
   <h1>Spartify Web Playback</h1>
   <script src="https://sdk.scdn.co/spotify-player.js"></script>
 
-  <!-- <h2>Group ID</h2>
+  <h2>Group ID</h2>
   <p id="groupID"></p>
   <h2>Spartify Queue</h2>
-  <p id="queue"></p> -->
-  <h1>Spartify Queue</h1>
-  <!-- <form action="http://608dev-2.net/sandbox/sc/team15/final/server.py" method="get">
-    <label for="group">Input Group:</label>
-    <input type="text" id="group" name="group">
-    <input type="submit">
-  </form> -->
-
-  <form id="form" onsubmit="return false">
-    <input type="text" id="userInput" />
-    <input type="submit" onclick="saveGroup();" />
-  </form>
-
-  <!-- <h1>Thermostat Values</h1>
-  <p>Group: {curr_state[0]}</p> -->
+  <h3>Current Song</h3>
+  <p id="currentSong">No current song</p>
+  <h3>Upcoming Songs </h3>
+  <ol>
+    <li id="nextSong">No next song queued</li>
+    <li id="nextnextSong">No next next song queued</li>
+  </ol>
+  <p id="queue"></p>
 
   <script type="text/javascript" src="jquery-1.8.1.min.js"></script>
   <script>
-    window.onload = function(){
-      var groupID = prompt("Input Group ID");
-      document.getElementById('groupID').innerHTML = groupID;
-    };
+    var groupID = "defaultGroupID";
 
     window.onSpotifyWebPlaybackSDKReady = () => {
-      const token = 'BQDNOSp25dWGlKTrVoQYZPEo9CGO9u3ixMEhDVregrDcPEencoMLTZ_cdTmIdShek_0USsQORF3AJ4TtSo78c7Lp_MKTna62Gx0KWPCjWcdAj0v_sQ_mGJFQcY4slHLL8rodh5SpIP_-2ICYQYveWjCqb3vFdwzO-JHiiE8KFKdt0Cstc3YQ-PY';
+      groupID = prompt("Input Group ID");
+      document.getElementById('groupID').innerHTML = groupID;
+      var groupTokens = new Map();
+      groupTokens.set("test1", {spotify_token: 'BQDUNU2GaV6opkhfjJ922VowUSQikegzHyRcXyvfWkAUmDQBl0oBSp68_-LB67I3OuOOLSnt_kNkYyerzOPbPhbkjdJ4B3twZsxaI2S-oI92dc-is85086K7Uoj5hNCpJq1nruSwyvL9C1gmIbzHNxYh42uAazKazSuFGMyRjNvcBLq4I4zxyoA'});
+      groupTokens.set("brandon", {spotify_token: 'BQDUNU2GaV6opkhfjJ922VowUSQikegzHyRcXyvfWkAUmDQBl0oBSp68_-LB67I3OuOOLSnt_kNkYyerzOPbPhbkjdJ4B3twZsxaI2S-oI92dc-is85086K7Uoj5hNCpJq1nruSwyvL9C1gmIbzHNxYh42uAazKazSuFGMyRjNvcBLq4I4zxyoA'});
+      var groupName = document.getElementById('groupID').innerHTML;
+      console.log("Group ID", groupID);
+      console.log("Group Token", groupTokens.get(groupName));
       const player = new Spotify.Player({
         name: 'Web Player',
-        getOAuthToken: cb => { cb(token); }
+        getOAuthToken: cb => { cb(groupTokens.get(groupName).spotify_token);}
       });
 
       // Error handling
@@ -49,13 +46,15 @@
       // Playback status updates
       player.addListener('player_state_changed', state => {
         console.log(state);
-        var tracks = state.track_window.next_tracks;
-        var output = "";
-        console.log("tracks: " + tracks + "\n");
-        for(var i = 0; i < tracks; i++) {
-          output += (tracks[i] + "\n");
+        document.getElementById('currentSong').innerHTML = "Current Song: " + state.track_window.current_track.name + " by " + state.track_window.current_track.artists[0].name;
+        for(var i = 0; i < state.track_window.next_tracks.length; i++) {
+          console.log(state.track_window.next_tracks[i].name);
+          if(i == 0) {
+            document.getElementById('nextSong').innerHTML = state.track_window.next_tracks[i].name + " by " + state.track_window.next_tracks[i].artists[0].name;
+          } else if(i == 1) {
+            document.getElementById('nextnextSong').innerHTML = state.track_window.next_tracks[i].name + " by " + state.track_window.next_tracks[i].artists[0].name;
+          }
         }
-        console.log("output: " + output + "\n");
       });
 
       // Ready
@@ -71,12 +70,6 @@
       // Connect to the player!
       player.connect();
     };
-
-    function saveGroup() {
-    var input = document.getElementById("userInput").value;
-    alert("Group: " + input);
-    }
-
   </script>
 </body>
 </html>
