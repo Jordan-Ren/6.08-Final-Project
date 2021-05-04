@@ -157,6 +157,46 @@ class TestServerDeliverable1(unittest.TestCase):
         print(request_handler(req3))
 
 if __name__ == '__main__':
-    #unittest.main()
-    test = TestServerDeliverable1()
-    test.test_skip_with_two_songs() 
+        #unittest.main()
+        #test = TestServerDeliverable1()
+        #test.test_skip_with_two_songs() 
+        '''
+        print("Finished")
+        req3 = {
+                'method': 'POST', 
+                'args': [], 
+                'values': {}, 
+                'content-type': 'application/x-www-form-urlencoded', 
+                'is_json': False,
+                'data': b'group=test1&password=pass1&action=finished&song=None', 
+                'form': {'group': 'test1', 'password': 'pass1', 'action':'finished', 'song': 'feverdream'}
+                }
+        print(request_handler(req3)
+        
+        print("\n\nAdd Song")
+        req = {
+                'method': 'POST', 
+                'args': [], 
+                'values': {}, 
+                'content-type': 'application/x-www-form-urlencoded', 
+                'is_json': False,
+                'data': b'group=test1&password=pass1&action=play&song=lovefool', 
+                'form': {'group': 'test1', 'password': 'pass1', 'action':'play', 'song': 'test6'}
+                }
+        print(request_handler(req))
+        '''
+        print("\n\nSkip Song")
+        req3 = {
+                'method': 'POST', 
+                'args': [], 
+                'values': {}, 
+                'content-type': 'application/x-www-form-urlencoded', 
+                'is_json': False,
+                'data': b'group=test1&password=pass1&action=finished&song=None', 
+                'form': {'group': 'test1', 'password': 'pass1', 'action':'finished', 'song': 'feverdream'}
+                }
+        print(request_handler(req3))
+        
+        
+
+

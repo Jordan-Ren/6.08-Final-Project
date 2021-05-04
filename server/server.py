@@ -30,7 +30,7 @@ def request_handler(request) -> str:
                         return "Handle resume instructions here"
                     elif action == "skip":
                         data = c.execute("""SELECT time_ FROM queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 1;""", (group,)).fetchone()
-                        c.execute("""DELETE FROM queue WHERE time_ = ?""", (data[0][0],))
+                        c.execute("""DELETE FROM queue WHERE time_ = ?""", (data[0],))
                         data = c.execute("""SELECT song FROM queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 1;""", (group,)).fetchone()
                         next_song = data[0]
                         return f'Next song is {next_song}' 
