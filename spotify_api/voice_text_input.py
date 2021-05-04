@@ -1,24 +1,28 @@
-import os
 import json
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
+from spotipy.oauth2 import SpotifyClientCredentials
 import sqlite3
 import datetime
 
+SPOTIFY_CLIENT_ID = ""
+SPOTIFY_CLIENT_SECRET = ""
+ACCESS_TOKEN = ""
+
 server_user = 'team15'
-ht_db = f'/var/jail/home/{server_user}/final/songs.db'
+ht_db = f'/var/jail/home/{server_user}/final/song_queue.db'
 
 HEADERS = {
-    'Authorization': 'Bearer {token}'.format(token=os.environ.get("ACCESS_TOKEN"))
+    'Authorization': 'Bearer {token}'.format(token=ACCESS_TOKEN)
 }
 BASE_URL = 'https://api.spotify.com/v1/'
 
 scope = "user-read-currently-playing user-top-read user-read-recently-played user-read-playback-state " \
             "user-modify-playback-state streaming app-remote-control user-library-read"
-
-sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=scope, client_id=os.environ.get('SPOTIFY_CLIENT_ID'),
-                                                client_secret=os.environ.get('SPOTIFY_CLIENT_SECRET'),
-                                               redirect_uri="http://example.com"))
+sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=SPOTIFY_CLIENT_ID, client_secret=SPOTIFY_CLIENT_SECRET))
+# sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=scope, client_id=SPOTIFY_CLIENT_ID,
+#                                                 client_secret=SPOTIFY_CLIENT_SECRET,
+#                                                redirect_uri="http://example.com"))
 
 def request_handler(request):
     if request['method'] =="GET":
@@ -37,25 +41,40 @@ def request_handler(request):
             # add_song_to_queue(response['track_uri'])
         elif command == "pause":
             pause()
+        elif command == "test":
+            return get_queue()
+        elif command == "clear":
+            clear_queue()
+            return "Cleared Queue"
         return response
     else:
         return "invalid HTTP method for this url."
 
+def clear_queue():
+    with sqlite3.connect(ht_db) as c:
+        res = c.execute("""DELETE from song_queue""")
+        return res
+
+
+def get_queue():
+    with sqlite3.connect(ht_db) as c:
+        res = c.execute("""SELECT * from song_queue""").fetchall()
+        return res
 
 def create_db():
     with sqlite3.connect(ht_db) as c:
-        c.execute("""CREATE TABLE IF NOT EXISTS queue (time_ timestamp, group_name text, song_name text, song_uri text, 
+        c.execute("""CREATE TABLE IF NOT EXISTS song_queue (time_ timestamp, group_name text, song_name text, song_uri text, 
         tempo real, energy real, time_signature integer, danceability real, segments text);""")
 
 
 def add_song_to_db(song_uri, song_name, group_name):
+    create_db()
     tempo, energy, time_signature, danceability, segments = get_audio_features(song_uri)
     now = datetime.datetime.now()
     with sqlite3.connect(ht_db) as c:
-        c.execute("""INSERT into queue VALUES (?,?,?,?,?,?,?,?,?)""", (now, group_name, song_name, tempo, energy,
+        c.execute("""INSERT into song_queue VALUES (?,?,?,?,?,?,?,?,?)""", (now, group_name, song_name, song_uri, tempo, energy,
                                                                              time_signature, danceability,
                                                                              json.dumps(segments)))
-
 def clean_input(voice_input):
     voice_input = voice_input.replace("to the queue", "")
     # Add in any other input cleaning to this function ex. if people keep saying play me ______, remove the "me"
@@ -81,6 +100,10 @@ def parse_voice_input(voice_input):
             data["song_name"] = " ".join(input_list[(input_list.index("add") + 1):])
             print("Command: ", command, "  Data: ", data)
             return command, data
+        elif "test" in input_list:
+            return "test", None
+        elif "clear" in input_list:
+            return "clear", None
     except Exception as e:
         print(e)
         raise e
@@ -145,4 +168,13 @@ if __name__ == "__main__":
     #     }
     # }
     # request_handler(req3)
-    get_audio_features('spotify:track:6habFhsOp2NvshLv26DqMb')
+    req = {
+        "method": "GET",
+        "values": {
+            "user": "acelli",
+            "group": "group15",
+            "voice": "test"
+        }
+    }
+    print(request_handler(req))
+    # print(get_audio_features('spotify:track:6habFhsOp2NvshLv26DqMb'))
