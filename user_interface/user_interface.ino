@@ -214,7 +214,7 @@ void send_request(char * trans) {
   strcat(request_buffer, "Content-Type: application/x-www-form-urlencoded\r\n");
   if (strcmp(trans, "\"pause\"") == 0 || strcmp(trans, "\"pause.\"") == 0) {
     sprintf(body, "group=test1&password=pass1&action=pause&song=None");
-  } else if (strcmp(trans, "\"play despacito.\"") == 0) {
+  } else if (strcmp(trans, "\"play despacito.\"") == 0 || strcmp(trans, "\"play despacito\"") == 0) {
     sprintf(body, "group=test1&password=pass1&action=play&song=despacito");
   } else if (strcmp(trans, "\"skip\"") == 0 || strcmp(trans, "\"skip.\"") == 0) {
     sprintf(body, "group=test1&password=pass1&action=skip&song=None");
