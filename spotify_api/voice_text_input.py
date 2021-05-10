@@ -273,7 +273,7 @@ def queue_manager(sp, group_name):
             skip_song(group_name)
             queue_manager(sp, group_name)
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
     # auth_manager = spotipy.oauth2.SpotifyOAuth(scope=scope,
     #                                            show_dialog=True, client_id=SPOTIFY_CLIENT_ID,
     #                                            client_secret=SPOTIFY_CLIENT_SECRET, redirect_uri="http://example.com")
@@ -312,18 +312,18 @@ if __name__ == "__main__":
     #     }
     # }
     # request_handler(req3)
-    auth_manager = spotipy.oauth2.SpotifyOAuth(scope=scope,
-                                               show_dialog=True, client_id=SPOTIFY_CLIENT_ID,
-                                               client_secret=SPOTIFY_CLIENT_SECRET, redirect_uri="http://example.com")
-    sp = spotipy.Spotify(auth_manager=auth_manager)
-    req = {
-        "method": "POST",
-        "form": {
-            "user": "acelli",
-            "group": "test1",
-            "password": "pass1",
-            "voice": "play sunburn"
-        }
-    }
-    print(request_handler(req))
+    # auth_manager = spotipy.oauth2.SpotifyOAuth(scope=scope,
+    #                                            show_dialog=True, client_id=SPOTIFY_CLIENT_ID,
+    #                                            client_secret=SPOTIFY_CLIENT_SECRET, redirect_uri="http://example.com")
+    # sp = spotipy.Spotify(auth_manager=auth_manager)
+    # req = {
+    #     "method": "POST",
+    #     "form": {
+    #         "user": "acelli",
+    #         "group": "test1",
+    #         "password": "pass1",
+    #         "voice": "play sunburn"
+    #     }
+    # }
+    # print(request_handler(req))
     # print(get_audio_features('spotify:track:6habFhsOp2NvshLv26DqMb'))
