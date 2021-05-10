@@ -125,6 +125,8 @@ def create_db():
 
 def add_song_to_db(sp, song_uri, song_name, group_name):
     create_db()
+    if len(get_queue()) == 0:
+        play_song(sp, song_uri)
     tempo, energy, time_signature, danceability, segments= get_audio_features(sp, song_uri)
     now = datetime.datetime.now()
     with sqlite3.connect(ht_db) as c:
@@ -156,6 +158,9 @@ def parse_artist(song_desc):
     if "by" in song_desc[:-1]:
         song = " ".join(song_desc[:song_desc.index("by")])
         artist = " ".join(song_desc[(song_desc.index("by") + 1):])
+    elif "bye" in song_desc[:-1]:
+        song = " ".join(song_desc[:song_desc.index("bye")])
+        artist = " ".join(song_desc[(song_desc.index("bye") + 1):])
     else:
         song = " ".join(song_desc)
         artist = "None"
@@ -312,10 +317,10 @@ if __name__ == "__main__":
     #     }
     # }
     # request_handler(req3)
-    auth_manager = spotipy.oauth2.SpotifyOAuth(scope=scope,
-                                               show_dialog=True, client_id=SPOTIFY_CLIENT_ID,
-                                               client_secret=SPOTIFY_CLIENT_SECRET, redirect_uri="http://example.com")
-    sp = spotipy.Spotify(auth_manager=auth_manager)
+    # auth_manager = spotipy.oauth2.SpotifyOAuth(scope=scope,
+    #                                            show_dialog=True, client_id=SPOTIFY_CLIENT_ID,
+    #                                            client_secret=SPOTIFY_CLIENT_SECRET, redirect_uri="http://example.com")
+    # sp = spotipy.Spotify(auth_manager=auth_manager)
     req = {
         "method": "POST",
         "form": {
@@ -325,5 +330,5 @@ if __name__ == "__main__":
             "voice": "play sunburn"
         }
     }
-    print(request_handler(req))
+    # print(request_handler(req))
     # print(get_audio_features('spotify:track:6habFhsOp2NvshLv26DqMb'))
