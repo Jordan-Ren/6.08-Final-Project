@@ -44,16 +44,16 @@ def request_handler(request):
         if group_name in VALID_GROUPS and VALID_GROUPS[group_name] == password:
             if command == "play" and data.get("song_name"):
                 response = get_song_uri(sp, data.get("song_name"), data.get("artist_name"))
-                add_song_to_db(sp, song_uri=response.get("track_uri"), song_name=data.get("song_name"),
+                add_song_to_db(sp, song_uri=response.get("track_uri"), song_name=response.get("song_name"),
                                group_name=group_name)
                 play_song(sp, response['track_uri'])
                 return f"Playing song: {data.get('song_name')}"
             elif command == "add" and data.get("song_name"):
                 response = get_song_uri(sp, data.get("song_name"), data.get("artist_name"))
-                add_song_to_db(sp, song_uri=response.get("track_uri"), song_name=data.get("song_name"),
+                add_song_to_db(sp, song_uri=response.get("track_uri"), song_name=response.get("song_name"),
                                group_name=group_name)
                 add_song_to_queue(sp, response['track_uri'])
-                return f"Song: {data.get('song_name')} added to the queue"
+                return f"Song: {response.get('song_name')} added to the queue"
             elif command == "pause":
                 pause(sp)
                 return "Paused playback"
@@ -204,6 +204,7 @@ def get_song_uri(sp, song, artist):
     found = False
     if len(res["tracks"]["items"]) > 0:
         if artist == "None":
+            response_data['song_name'] = res["tracks"]["items"][0]["name"]
             response_data['track_uri'] = res["tracks"]["items"][0]["uri"]
             response_data['url'] = res["tracks"]["items"][0]["external_urls"]["spotify"]
             found = True
@@ -211,6 +212,7 @@ def get_song_uri(sp, song, artist):
             for song in res["tracks"]["items"]:
                 artists = {a['name'].lower() for a in song['artists']}
                 if artist in artists:
+                    response_data['song_name'] = song["name"]
                     response_data['track_uri'] = song["uri"]
                     response_data['url'] = song["external_urls"]["spotify"]
                     found = True
