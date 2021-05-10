@@ -209,7 +209,7 @@ void led_control() {
 void send_request(char * trans) {
   tft.fillScreen(TFT_BLACK);
   char body[100]; //I need to be changed.
-  sprintf(request_buffer, "POST http://608dev-2.net/sandbox/sc/team15/final/voice_text_input.py HTTP/1.1\r\n");
+  sprintf(request_buffer, "POST http://608dev-2.net/sandbox/sc/team15/final/voice_text_input_with_secrets.py HTTP/1.1\r\n");
   sprintf(request_buffer + strlen(request_buffer), "Host: %s\r\n", host);
   strcat(request_buffer, "Content-Type: application/x-www-form-urlencoded\r\n");
   sprintf(body, "user=acelli&group=test1&password=pass1&voice=%s", trans);

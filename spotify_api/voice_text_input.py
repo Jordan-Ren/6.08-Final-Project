@@ -25,6 +25,8 @@ def request_handler(request):
                                                cache_handler=cache_handler,
                                                show_dialog=True, client_id=SPOTIFY_CLIENT_ID,
                                                client_secret=SPOTIFY_CLIENT_SECRET, redirect_uri="http://example.com")
+
+    sp = spotipy.Spotify(auth_manager=auth_manager)
     if request['method'] == "POST":
         if request["form"].get('code'):
             auth_manager.get_access_token(request["form"]["code"])
@@ -33,7 +35,6 @@ def request_handler(request):
             if not auth_manager.validate_token(cache_handler.get_cached_token()):
                 auth_url = auth_manager.get_authorize_url()
                 return f'<h2><a href="{auth_url}">Sign in</a></h2>'
-        sp = spotipy.Spotify(auth_manager=auth_manager)
         username = request["form"].get("user")
         group_name = request["form"].get("group")
         password = request["form"].get("password")
@@ -51,7 +52,7 @@ def request_handler(request):
                 response = get_song_uri(sp, data.get("song_name"), data.get("artist_name"))
                 add_song_to_db(sp, song_uri=response.get("track_uri"), song_name=data.get("song_name"),
                                group_name=group_name)
-                add_song_to_queue(response['track_uri'])
+                add_song_to_queue(sp, response['track_uri'])
                 return f"Song: {data.get('song_name')} added to the queue"
             elif command == "pause":
                 pause(sp)
@@ -64,6 +65,7 @@ def request_handler(request):
                 return "Cleared Queue"
             elif command == "skip":
                 next_song = skip_song(group_name)
+                sp.next_track()
                 return f"Next song is {next_song}"
             elif command == "None":
                 return "Invalid voice input, please try again"
@@ -71,6 +73,7 @@ def request_handler(request):
     elif request["method"] == "GET":
         group_name = request["values"]["group"]
         if group_name in VALID_GROUPS:
+            queue_manager(sp, group_name)
             with sqlite3.connect(ht_db) as c:
                 data = c.execute(
                     """SELECT song_name FROM song_queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 4;""",
@@ -123,15 +126,18 @@ def add_song_to_db(sp, song_uri, song_name, group_name):
 
 def clean_input(voice_input):
     voice_input = voice_input.lower()
+    voice_input = voice_input.replace('"', "")
     if voice_input[-1] == '.':
         voice_input = voice_input[:-1]
     voice_input = voice_input.replace("to the queue", "")
+    voice_input = voice_input.replace("to the q", "")
     inp_list = voice_input.split(' ')
     if "next song" not in voice_input and "next" == inp_list[-1]:
         voice_input = voice_input.replace("next", "")
     if "now" == inp_list[-1]:
         voice_input = voice_input.replace("now", "")
     return voice_input
+
 
 def parse_artist(song_desc):
     data = {}
@@ -148,7 +154,7 @@ def parse_artist(song_desc):
 
 def parse_voice_input(voice_input):
     '''
-    Possible Commands: 
+    Possible Commands:
     # Skipping
         * skip *
         * next song *
@@ -175,7 +181,7 @@ def parse_voice_input(voice_input):
         elif "add" in input_list:
             command = "add"
             data = parse_artist(input_list[(input_list.index("add") + 1):])
-        elif "queue up " in voice_input:
+        elif "queue up" in voice_input or "q up" in voice_input:
             command = "add"
             data = parse_artist(input_list[(input_list.index("up") + 1):])
         elif "pause" in input_list:
@@ -239,44 +245,13 @@ def get_audio_features(sp, song_uri):
                 res.get('sections')]
     return tempo, energy, time_signature, danceability, segments
 
-
-if __name__ == "__main__":
-    # req = {
-    #     "method": "GET",
-    #     "values": {
-    #         "user": "acelli",
-    #         "group": "group15",
-    #         "voice": "Play despacito"
-    #     }
-    # }
-    # request_handler(req)
-    # req2 = {
-    #     "method": "GET",
-    #     "values": {
-    #         "user": "acelli",
-    #         "group": "group15",
-    #         "voice": "add sunburn to the queue"
-    #     }
-    # }
-    # request_handler(req2)
-    # import time
-    # time.sleep(10)
-    # req3 = {
-    #     "method": "GET",
-    #     "values": {
-    #         "user": "acelli",
-    #         "voice": "pause"
-    #     }
-    # }
-    # request_handler(req3)
-    req = {
-        "method": "POST",
-        "form": {
-            "user": "acelli",
-            "group": "test1",
-            "password": "pass1",
-            "voice": "play sunburn"
-        }
-    }
-    #print(request_handler(req))
-    # print(get_audio_features('spotify:track:6habFhsOp2NvshLv26DqMb'))
+def queue_manager(sp, group_name):
+    currently_playing = sp.currently_playing().get('item')
+    if currently_playing:
+        song_uri = currently_playing.get('uri')
+        with sqlite3.connect(ht_db) as c:
+            res = c.execute("""SELECT song_uri FROM song_queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 1;""",
+                            (group_name,)).fetchone()[0]
+        if song_uri != res:
+            skip_song(group_name)
+            queue_manager(sp, group_name)
