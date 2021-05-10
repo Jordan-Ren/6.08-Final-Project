@@ -277,6 +277,5 @@ if __name__ == "__main__":
             "voice": "play sunburn"
         }
     }
-    print(get_song_uri('wishing well', 'juice wrld', resp))
     #print(request_handler(req))
     # print(get_audio_features('spotify:track:6habFhsOp2NvshLv26DqMb'))
