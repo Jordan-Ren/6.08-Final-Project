@@ -209,20 +209,10 @@ void led_control() {
 void send_request(char * trans) {
   tft.fillScreen(TFT_BLACK);
   char body[100]; //I need to be changed.
-  sprintf(request_buffer, "POST http://608dev-2.net/sandbox/sc/team15/final/server.py HTTP/1.1\r\n");
+  sprintf(request_buffer, "POST http://608dev-2.net/sandbox/sc/team15/final/voice_text_input.py HTTP/1.1\r\n");
   sprintf(request_buffer + strlen(request_buffer), "Host: %s\r\n", host);
   strcat(request_buffer, "Content-Type: application/x-www-form-urlencoded\r\n");
-  if (strcmp(trans, "\"pause\"") == 0 || strcmp(trans, "\"pause.\"") == 0) {
-    sprintf(body, "group=test1&password=pass1&action=pause&song=None");
-  } else if (strcmp(trans, "\"play despacito.\"") == 0 || strcmp(trans, "\"play despacito\"") == 0) {
-    sprintf(body, "group=test1&password=pass1&action=play&song=despacito");
-  } else if (strcmp(trans, "\"skip\"") == 0 || strcmp(trans, "\"skip.\"") == 0) {
-    sprintf(body, "group=test1&password=pass1&action=skip&song=None");
-  } else if (strcmp(trans, "\"resume\"") == 0 || strcmp(trans, "\"resume.\"") == 0) {
-    sprintf(body, "group=test1&password=pass1&action=resume&song=None");
-  } else {
-    sprintf(response_buffer, "Command: %s is invalid. Try again.", trans);
-  }
+  sprintf(body, "user=acelli&group=test1&password=pass1&voice=%s", trans);
   sprintf(request_buffer + strlen(request_buffer), "Content-Length: %d\r\n\r\n", strlen(body));
   strcat(request_buffer, body);
   do_http_request(host, request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
