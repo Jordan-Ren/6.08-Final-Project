@@ -34,10 +34,10 @@ def request_handler(request):
                 auth_url = auth_manager.get_authorize_url()
                 return f'<h2><a href="{auth_url}">Sign in</a></h2>'
         sp = spotipy.Spotify(auth_manager=auth_manager)
-        username = request["form"]["user"]
-        group_name = request["form"]["group"]
-        password = request["form"]["password"]
-        voice_input = request["form"]["voice"]
+        username = request["form"].get("user")
+        group_name = request["form"].get("group")
+        password = request["form"].get("password")
+        voice_input = request["form"].get("voice")
         command, data = parse_voice_input(voice_input)
         response = None
         if group_name in VALID_GROUPS and VALID_GROUPS[group_name] == password:
@@ -46,12 +46,13 @@ def request_handler(request):
                 add_song_to_db(sp, song_uri=response.get("track_uri"), song_name=data.get("song_name"),
                                group_name=group_name)
                 play_song(sp, response['track_uri'])
+                return f"Playing song: {data.get('song_name')}"
             elif command == "add" and data.get("song_name"):
                 response = get_song_uri(data.get("song_name"))
                 add_song_to_db(song_uri=response.get("track_uri"), song_name=data.get("song_name"),
                                group_name=group_name)
                 add_song_to_queue(response['track_uri'])
-                return f"Song: {data.get('songe_name')} added to the queue"
+                return f"Song: {data.get('song_name')} added to the queue"
             elif command == "pause":
                 pause(sp)
                 return "Paused playback"
