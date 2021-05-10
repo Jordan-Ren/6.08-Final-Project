@@ -131,6 +131,8 @@ def clean_input(voice_input):
         voice_input = voice_input[:-1]
     voice_input = voice_input.replace("to the queue", "")
     voice_input = voice_input.replace("to the q", "")
+    voice_input = voice_input.replace("can you please", "")
+    voice_input = voice_input.replace(voice_input.split("play")[0], "") # remove everything before "play [song]"
     inp_list = voice_input.split(' ')
     if "next song" not in voice_input and "next" == inp_list[-1]:
         voice_input = voice_input.replace("next", "")
