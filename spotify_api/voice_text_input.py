@@ -24,9 +24,8 @@ def request_handler(request):
     auth_manager = spotipy.oauth2.SpotifyOAuth(scope=scope,
                                                cache_handler=cache_handler,
                                                show_dialog=True, client_id=SPOTIFY_CLIENT_ID,
-                                               client_secret=SPOTIFY_CLIENT_SECRET, redirect_uri="http://example.com")
-
-    sp = spotipy.Spotify(auth_manager=auth_manager)
+                                               client_secret=SPOTIFY_CLIENT_SECRET,
+                                               redirect_uri="http://example.com")
     if request['method'] == "POST":
         if request["form"].get('code'):
             auth_manager.get_access_token(request["form"]["code"])
@@ -35,6 +34,7 @@ def request_handler(request):
             if not auth_manager.validate_token(cache_handler.get_cached_token()):
                 auth_url = auth_manager.get_authorize_url()
                 return f'<h2><a href="{auth_url}">Sign in</a></h2>'
+        sp = spotipy.Spotify(auth_manager=auth_manager)
         username = request["form"].get("user")
         group_name = request["form"].get("group")
         password = request["form"].get("password")
@@ -71,14 +71,18 @@ def request_handler(request):
                 return "Invalid voice input, please try again"
             return response
     elif request["method"] == "GET":
+        sp = spotipy.Spotify(auth_manager=auth_manager)
         group_name = request["values"]["group"]
         if group_name in VALID_GROUPS:
             queue_manager(sp, group_name)
             with sqlite3.connect(ht_db) as c:
                 data = c.execute(
-                    """SELECT song_name FROM song_queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 4;""",
-                    (group_name,)).fetchall()
-                data = [x[0] for x in data]
+                    """SELECT song_name, tempo, danceability, segments FROM song_queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 1;""",
+                    (group_name,)).fetchone()
+                album_uri = sp.currently_playing()['item']['album']['uri']
+                genres = sp.album(album_uri).get('genres')
+                data = list(data)
+                data.append(genres)
                 return data
     else:
         return "invalid HTTP method for this url."
@@ -97,7 +101,10 @@ def skip_song(group_name):
         c.execute("""DELETE FROM song_queue WHERE time_ = ?""", (res[0],))
         res = c.execute("""SELECT song_name FROM song_queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 1;""",
                         (group_name,)).fetchone()
-        next_song = res[0]
+        if res:
+            next_song = res[0]
+        else:
+            next_song = None
         return next_song
 
 
@@ -115,7 +122,7 @@ def create_db():
 
 def add_song_to_db(sp, song_uri, song_name, group_name):
     create_db()
-    tempo, energy, time_signature, danceability, segments = get_audio_features(sp, song_uri)
+    tempo, energy, time_signature, danceability, segments= get_audio_features(sp, song_uri)
     now = datetime.datetime.now()
     with sqlite3.connect(ht_db) as c:
         c.execute("""INSERT into song_queue VALUES (?,?,?,?,?,?,?,?,?)""",
@@ -132,7 +139,7 @@ def clean_input(voice_input):
     voice_input = voice_input.replace("to the queue", "")
     voice_input = voice_input.replace("to the q", "")
     voice_input = voice_input.replace("can you please", "")
-    voice_input = voice_input.replace(voice_input.split("play")[0], "") # remove everything before "play [song]"
+    # voice_input = voice_input.replace(voice_input.split("play")[0], "") # remove everything before "play [song]"
     inp_list = voice_input.split(' ')
     if "next song" not in voice_input and "next" == inp_list[-1]:
         voice_input = voice_input.replace("next", "")
@@ -255,7 +262,9 @@ def queue_manager(sp, group_name):
         song_uri = currently_playing.get('uri')
         with sqlite3.connect(ht_db) as c:
             res = c.execute("""SELECT song_uri FROM song_queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 1;""",
-                            (group_name,)).fetchone()[0]
-        if song_uri != res:
+                            (group_name,)).fetchone()
+        if res:
+            res = res[0]
+        if res and song_uri != res:
             skip_song(group_name)
             queue_manager(sp, group_name)
