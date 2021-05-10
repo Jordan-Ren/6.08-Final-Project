@@ -52,11 +52,10 @@ char recorded_transcript[100] = {0};
 
 /* CONSTANTS */
 //Prefix to POST request:
-const char PREFIX[] = "{\"config\":{\"encoding\":\"MULAW\",\"sampleRateHertz\":8000,\"languageCode\": \"en-US\",
-\"speechContexts\":[{\"phrases\":[\"play despacito\",\"pause\", \"resume\", \"skip\", \"queue\", \"add\", \"play\", 
-\"please\", \"can you please\", \"to the queue\", \"next\", \"next song\", \"song\", \"now\", \"by\", \"clear\", 
-\"resume\", \"queue up\"]}]},
-\"audio\": {\"content\":\"";
+const char PREFIX[] = "{\"config\":{\"encoding\":\"MULAW\",\"sampleRateHertz\":8000,\"languageCode\": \"en-US\"," \
+"\"speechContexts\":[{\"phrases\":[\"play despacito\",\"pause\", \"resume\", \"skip\", \"queue\", \"add\", \"play\"," \
+"\"please\", \"can you please\", \"to the queue\", \"next\", \"next song\", \"song\", \"now\", \"by\", \"clear\"," \
+"\"resume\", \"queue up\"]}]}, \"audio\": {\"content\":\"";
 const char SUFFIX[] = "\"}}"; //suffix to POST request
 const int AUDIO_IN = A0; //pin where microphone is connected
 const char API_KEY[] = "AIzaSyCwyynsePu7xijUYTOgR7NdVqxH2FAG9DQ"; //don't change this
