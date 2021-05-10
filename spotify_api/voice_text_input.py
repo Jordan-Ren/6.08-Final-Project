@@ -42,14 +42,14 @@ def request_handler(request):
         response = None
         if group_name in VALID_GROUPS and VALID_GROUPS[group_name] == password:
             if command == "play" and data.get("song_name"):
-                response = get_song_uri(sp, data.get("song_name"))
+                response = get_song_uri(sp, data.get("song_name"), data.get("artist_name"))
                 add_song_to_db(sp, song_uri=response.get("track_uri"), song_name=data.get("song_name"),
                                group_name=group_name)
                 play_song(sp, response['track_uri'])
                 return f"Playing song: {data.get('song_name')}"
             elif command == "add" and data.get("song_name"):
-                response = get_song_uri(data.get("song_name"))
-                add_song_to_db(song_uri=response.get("track_uri"), song_name=data.get("song_name"),
+                response = get_song_uri(sp, data.get("song_name"), data.get("artist_name"))
+                add_song_to_db(sp, song_uri=response.get("track_uri"), song_name=data.get("song_name"),
                                group_name=group_name)
                 add_song_to_queue(response['track_uri'])
                 return f"Song: {data.get('song_name')} added to the queue"
@@ -65,6 +65,8 @@ def request_handler(request):
             elif command == "skip":
                 next_song = skip_song(group_name)
                 return f"Next song is {next_song}"
+            elif command == "None":
+                return "Invalid voice input, please try again"
             return response
     elif request["method"] == "GET":
         group_name = request["values"]["group"]
@@ -120,43 +122,93 @@ def add_song_to_db(sp, song_uri, song_name, group_name):
 
 
 def clean_input(voice_input):
+    voice_input = voice_input.lower()
+    if voice_input[-1] == '.':
+        voice_input = voice_input[:-1]
     voice_input = voice_input.replace("to the queue", "")
-    # Add in any other input cleaning to this function ex. if people keep saying play me ______, remove the "me"
+    inp_list = voice_input.split(' ')
+    if "next song" not in voice_input and "next" == inp_list[-1]:
+        voice_input = voice_input.replace("next", "")
+    if "now" == inp_list[-1]:
+        voice_input = voice_input.replace("now", "")
     return voice_input
+
+def parse_artist(song_desc):
+    data = {}
+    if "by" in song_desc[:-1]:
+        song = " ".join(song_desc[:song_desc.index("by")])
+        artist = " ".join(song_desc[(song_desc.index("by") + 1):])
+    else:
+        song = " ".join(song_desc)
+        artist = "None"
+    data["song_name"] = song
+    data["artist_name"] = artist
+    return data
 
 
 def parse_voice_input(voice_input):
+    '''
+    Possible Commands: 
+    # Skipping
+        * skip *
+        * next song *
+    # Add to queue (Only if the skipping phrases are missing)
+        * play ___ ("" | next | now)
+        * add ___ (to the queue | "" | next)
+        * queue up ___ (next | now | "")
+        # With a specific artist request within ___
+            "SONG" by "ARTIST"
+    # Pausing (Only if the add/play/queue-up key words are missing)
+        * pause *
+    # Resuming (Only if the add/play/queue-up/pause key words are missing)
+        * resume *
+    '''
     try:
         voice_input = clean_input(voice_input)
-        input_list = voice_input.lower().split()
+        input_list = voice_input.split()
         data = {}
-        if "play" in input_list:
+        if "skip" in input_list or "next song" in voice_input:
+            command = "skip"
+        elif "play" in input_list:
             command = "play"
-            data["song_name"] = " ".join(input_list[(input_list.index("play") + 1):])
-            print("Command: ", command, "  Data: ", data)
-            return command, data
-        elif "pause" in input_list:
-            command = "pause"
-            print("Command: ", command, "  Data: ", data)
-            return command, data
+            data = parse_artist(input_list[(input_list.index("play") + 1):])
         elif "add" in input_list:
             command = "add"
-            data["song_name"] = " ".join(input_list[(input_list.index("add") + 1):])
-            print("Command: ", command, "  Data: ", data)
-            return command, data
+            data = parse_artist(input_list[(input_list.index("add") + 1):])
+        elif "queue up " in voice_input:
+            command = "add"
+            data = parse_artist(input_list[(input_list.index("up") + 1):])
+        elif "pause" in input_list:
+            command = "pause"
+        elif "resume" in input_list:
+            command = "resume"
         elif "clear" in input_list:
             return "clear", None
+        else:
+            command = "No Command"
+        return command, data
     except Exception as e:
-        print(e)
         raise e
 
 
-def get_song_uri(sp, song):
-    res = sp.search(song, limit=1, type="track")
+def get_song_uri(sp, song, artist):
     response_data = {}
+    lim = 1 if artist == "None" else 50
+    res = sp.search(song, limit=lim, type="track")
+    found = False
     if len(res["tracks"]["items"]) > 0:
-        response_data['track_uri'] = res["tracks"]["items"][0]["uri"]
-        response_data['url'] = res["tracks"]["items"][0]["external_urls"]["spotify"]
+        if artist == "None":
+            response_data['track_uri'] = res["tracks"]["items"][0]["uri"]
+            response_data['url'] = res["tracks"]["items"][0]["external_urls"]["spotify"]
+            found = True
+        else:
+            for song in res["tracks"]["items"]:
+                artists = {a['name'].lower() for a in song['artists']}
+                if artist in artists:
+                    response_data['track_uri'] = song["uri"]
+                    response_data['url'] = song["external_urls"]["spotify"]
+                    found = True
+    if found:
         return response_data
     else:
         return "Song not found"
@@ -226,5 +278,5 @@ if __name__ == "__main__":
             "voice": "play sunburn"
         }
     }
-    print(request_handler(req))
+    #print(request_handler(req))
     # print(get_audio_features('spotify:track:6habFhsOp2NvshLv26DqMb'))
