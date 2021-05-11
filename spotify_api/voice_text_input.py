@@ -80,8 +80,6 @@ def request_handler(request):
                 data = c.execute(
                     """SELECT song_name, tempo, danceability, segments FROM song_queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 1;""",
                     (group_name,)).fetchone()
-                if data == None: return "No song currently queued"
-                if sp.currently_playing() == None: return "No song currently queued"
                 artist_uri = sp.currently_playing()['item']['artists'][0]['uri']
                 genres = sp.artist(artist_uri).get('genres')
                 data = list(data)
@@ -260,7 +258,6 @@ def get_audio_features(sp, song_uri):
     return tempo, energy, time_signature, danceability, segments
 
 def queue_manager(sp, group_name):
-    if sp.currently_playing() == None: return "No song currently queued"
     currently_playing = sp.currently_playing().get('item')
     if currently_playing:
         song_uri = currently_playing.get('uri')
@@ -273,7 +270,7 @@ def queue_manager(sp, group_name):
             skip_song(group_name)
             queue_manager(sp, group_name)
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
     # auth_manager = spotipy.oauth2.SpotifyOAuth(scope=scope,
     #                                            show_dialog=True, client_id=SPOTIFY_CLIENT_ID,
     #                                            client_secret=SPOTIFY_CLIENT_SECRET, redirect_uri="http://example.com")
@@ -312,18 +309,14 @@ def queue_manager(sp, group_name):
     #     }
     # }
     # request_handler(req3)
-    # auth_manager = spotipy.oauth2.SpotifyOAuth(scope=scope,
-    #                                            show_dialog=True, client_id=SPOTIFY_CLIENT_ID,
-    #                                            client_secret=SPOTIFY_CLIENT_SECRET, redirect_uri="http://example.com")
-    # sp = spotipy.Spotify(auth_manager=auth_manager)
-    # req = {
-    #     "method": "POST",
-    #     "form": {
-    #         "user": "acelli",
-    #         "group": "test1",
-    #         "password": "pass1",
-    #         "voice": "play sunburn"
-    #     }
-    # }
+    req = {
+        "method": "POST",
+        "form": {
+            "user": "acelli",
+            "group": "test1",
+            "password": "pass1",
+            "voice": "play sunburn"
+        }
+    }
     # print(request_handler(req))
     # print(get_audio_features('spotify:track:6habFhsOp2NvshLv26DqMb'))
