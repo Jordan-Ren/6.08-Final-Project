@@ -347,7 +347,7 @@ void pop() {
  
 void loop() 
 {
-//   rock();
+   rock();
 //   noise();
-   pop();
+//   pop();
 }

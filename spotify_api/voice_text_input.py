@@ -276,7 +276,6 @@ def get_audio_features(sp, song_uri):
     return tempo, energy, time_signature, danceability, segments
 
 def queue_manager(sp, group_name):
-    if sp.currently_playing() == None: return "No song currently queued"
     currently_playing = sp.currently_playing().get('item')
     if currently_playing:
         song_uri = currently_playing.get('uri')
@@ -289,7 +288,7 @@ def queue_manager(sp, group_name):
             skip_song(group_name)
             queue_manager(sp, group_name)
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
     # auth_manager = spotipy.oauth2.SpotifyOAuth(scope=scope,
     #                                            show_dialog=True, client_id=SPOTIFY_CLIENT_ID,
     #                                            client_secret=SPOTIFY_CLIENT_SECRET, redirect_uri="http://example.com")
@@ -328,10 +327,6 @@ def queue_manager(sp, group_name):
     #     }
     # }
     # request_handler(req3)
-    # auth_manager = spotipy.oauth2.SpotifyOAuth(scope=scope,
-    #                                            show_dialog=True, client_id=SPOTIFY_CLIENT_ID,
-    #                                            client_secret=SPOTIFY_CLIENT_SECRET, redirect_uri="http://example.com")
-    # sp = spotipy.Spotify(auth_manager=auth_manager)
     req = {
         "method": "POST",
         "form": {
