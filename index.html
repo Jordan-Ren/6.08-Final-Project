@@ -19,6 +19,19 @@
   </ol>
   <p id="queue"></p>
 
+  <!-- <form action=""> 
+    <select name="customers" onchange="getQueue(this.value)">
+      <option value="">Select a customer:</option>
+      <option value="ALFKI">Alfreds Futterkiste</option>
+      <option value="NORTS ">North/South</option>
+      <option value="WOLZA">Wolski Zajazd</option>
+    </select>
+  </form> -->
+
+  <button type="button" onclick="getQueue()">Get Queue</button>
+  <br>
+  <div id="txtHint">Queue info will be listed here...</div>
+
   <!-- <script type="text/javascript" src="jquery-1.8.1.min.js"></script> -->
   <script>
     var groupID = "defaultGroupID";
@@ -70,6 +83,25 @@
       // Connect to the player!
       player.connect();
     };
+
+  function getQueue(str) {
+    var xhttp;  
+    // if (str == "") {
+    //   document.getElementById("txtHint").innerHTML = "";
+    //   return;
+    // }
+    xhttp = new XMLHttpRequest();
+    var groupName = document.getElementById('groupID').innerHTML;
+    xhttp.onreadystatechange = function() {
+      if (this.readyState == 4 && this.status == 200) {
+        document.getElementById("txtHint").innerHTML = this.responseText;
+      }
+    };
+    xhttp.open("GET", "http://608dev-2.net/sandbox/sc/team15/final/voice_text_input_with_secrets.py?group="+groupName, true);
+    xhttp.send();
+  }
+
+
   </script>
 </body>
 </html>

@@ -123,6 +123,8 @@ def create_db():
 
 def add_song_to_db(sp, song_uri, song_name, group_name):
     create_db()
+    if len(get_queue()) == 0:
+        play_song(sp, song_uri)
     tempo, energy, time_signature, danceability, segments= get_audio_features(sp, song_uri)
     now = datetime.datetime.now()
     with sqlite3.connect(ht_db) as c:
@@ -154,6 +156,9 @@ def parse_artist(song_desc):
     if "by" in song_desc[:-1]:
         song = " ".join(song_desc[:song_desc.index("by")])
         artist = " ".join(song_desc[(song_desc.index("by") + 1):])
+    elif "bye" in song_desc[:-1]:
+        song = " ".join(song_desc[:song_desc.index("bye")])
+        artist = " ".join(song_desc[(song_desc.index("bye") + 1):])
     else:
         song = " ".join(song_desc)
         artist = "None"
