@@ -30,7 +30,7 @@
 
   <button type="button" onclick="getQueue()">Get Queue</button>
   <br>
-  <div id="txtHint">Queue info will be listed here...</div>
+  <div id="txtHint">Requests info will be listed here...</div>
 
   <!-- <script type="text/javascript" src="jquery-1.8.1.min.js"></script> -->
   <script>
@@ -97,7 +97,7 @@
         document.getElementById("txtHint").innerHTML = this.responseText;
       }
     };
-    xhttp.open("GET", "http://608dev-2.net/sandbox/sc/team15/final/voice_text_input_with_secrets.py?group="+groupName, true);
+    xhttp.open("GET", "http://608dev-2.net/sandbox/sc/team15/final/voice_text_input_with_secrets.py?group="+groupName+"?requests=yes", true);
     xhttp.send();
   }
 
