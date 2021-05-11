@@ -74,19 +74,30 @@ def request_handler(request):
     elif request["method"] == "GET":
         sp = spotipy.Spotify(auth_manager=auth_manager)
         group_name = request["values"]["group"]
+        #Brandon and David added this field for returning more song info
         if group_name in VALID_GROUPS:
-            queue_manager(sp, group_name)
-            with sqlite3.connect(ht_db) as c:
-                data = c.execute(
-                    """SELECT song_name, tempo, danceability, segments FROM song_queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 1;""",
-                    (group_name,)).fetchone()
-                if data == None: return "No song currently queued"
-                if sp.currently_playing() == None: return "No song currently queued"
-                artist_uri = sp.currently_playing()['item']['artists'][0]['uri']
-                genres = sp.artist(artist_uri).get('genres')
-                data = list(data)
-                data.append(genres)
-                return data
+            if request["values"]["requests"] is None:
+                queue_manager(sp, group_name)
+                with sqlite3.connect(ht_db) as c:
+                    data = c.execute(
+                        """SELECT song_name, tempo, danceability, segments FROM song_queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 1;""",
+                        (group_name,)).fetchone()
+                    if data == None: return "No song currently queued"
+                    if sp.currently_playing() == None: return "No song currently queued"
+                    artist_uri = sp.currently_playing()['item']['artists'][0]['uri']
+                    genres = sp.artist(artist_uri).get('genres')
+                    data = list(data)
+                    data.append(genres)
+                    return data
+            else:
+                with sqlite3.connect(ht_db) as c:
+                    data = c.execute(
+                        """SELECT song_name, time_ FROM song_queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 3;""",(group_name,)).fetchall()
+                    if data == None: return "No song currently requested"
+                    return data
+
+        else:
+            return "invalid group"
     else:
         return "invalid HTTP method for this url."
 
