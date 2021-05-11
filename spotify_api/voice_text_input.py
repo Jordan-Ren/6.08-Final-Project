@@ -11,7 +11,8 @@ SPOTIFY_CLIENT_SECRET = ""
 ACCESS_TOKEN = ""
 
 server_user = 'team15'
-ht_db = f'/var/jail/home/{server_user}/final/song_queue.db'
+#ht_db = f'/var/jail/home/{server_user}/final/song_queue.db'
+ht_db = 'test.db'
 BASE_URL = 'https://api.spotify.com/v1/'
 
 scope = "user-read-currently-playing user-top-read user-read-recently-played user-read-playback-state " \
@@ -133,9 +134,44 @@ def create_db():
         c.execute("""CREATE TABLE IF NOT EXISTS song_queue (time_ timestamp, group_name text, song_name text, song_uri text, 
         tempo real, energy real, time_signature integer, danceability real, segments text);""")
 
+def create_users_db():
+    with sqlite3.connect(ht_db) as c:
+        c.execute("""CREATE TABLE IF NOT EXISTS song_users (group_name text, user_name text, popularity real, votes real);""")
+
+def add_user(group_n, user_name):
+    with sqlite3.connect(ht_db) as c:
+        res = c.execute("""SELECT * FROM song_users WHERE group_name = ? AND user_name = ?;""", (group_n, user_name,)).fetchall()
+        if res is None or len(res) == 0:
+            print("Creating new user for the first time")
+            res = c.execute("""SELECT * FROM song_users;""").fetchall()
+            print(res)
+            c.execute("""INSERT into song_users VALUES (?,?,?,?)""",
+                        (group_n, user_name, .5, 1))
+            res = c.execute("""SELECT * FROM song_users;""").fetchall()
+            print(res)
+        else:
+            print("User already added")
+            print(res)
+
+def update_user_popularity(group_n, user_n, vote):
+    with sqlite3.connect(ht_db) as c:
+        print("Upvote for user:", user_n)
+        res = c.execute("""SELECT popularity, votes FROM song_users WHERE group_name = ? AND user_name = ?;""",
+                            (group_n, user_n)).fetchall()
+        print(res)
+        prev_pop, tot_votes = res[0]
+        new_popularity = (vote + prev_pop*tot_votes) / (tot_votes+1)
+        c.execute("""UPDATE song_users SET popularity = ?, votes = ? WHERE group_name = ? AND user_name = ?""", (new_popularity, tot_votes + 1, group_n, user_n))
+        res = c.execute("""SELECT * FROM song_users WHERE group_name = ? AND user_name = ?;""",
+                            (group_n, user_n)).fetchall()
+        print("Updated popularity values below!")
+        print(res)
+
+
 
 def add_song_to_db(sp, song_uri, song_name, group_name):
     create_db()
+    create_user_db()
     if len(get_queue()) == 0:
         play_song(sp, song_uri)
     tempo, energy, time_signature, danceability, segments= get_audio_features(sp, song_uri)
@@ -327,14 +363,14 @@ if __name__ == "__main__":
     #     }
     # }
     # request_handler(req3)
-    req = {
-        "method": "POST",
-        "form": {
-            "user": "acelli",
-            "group": "test1",
-            "password": "pass1",
-            "voice": "play sunburn"
-        }
-    }
     # print(request_handler(req))
     # print(get_audio_features('spotify:track:6habFhsOp2NvshLv26DqMb'))
+    
+    create_users_db()
+    add_user("team15", "jordan")
+    add_user("team15", "bob")
+    update_user_popularity("team15", "jordan", 1)
+    update_user_popularity("team15", "jordan", 1)
+    update_user_popularity("team15", "jordan", 0)
+    update_user_popularity("team15", "bob", 0)
+    update_user_popularity("team15", "bob", 1)
