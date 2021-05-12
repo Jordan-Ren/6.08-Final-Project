@@ -367,12 +367,3 @@ if __name__ == "__main__":
     # request_handler(req3)
     # print(request_handler(req))
     # print(get_audio_features('spotify:track:6habFhsOp2NvshLv26DqMb'))
-    
-    create_users_db()
-    add_user("team15", "jordan")
-    add_user("team15", "bob")
-    update_user_popularity("team15", "jordan", 1)
-    update_user_popularity("team15", "jordan", 1)
-    update_user_popularity("team15", "jordan", 0)
-    update_user_popularity("team15", "bob", 0)
-    update_user_popularity("team15", "bob", 1)
