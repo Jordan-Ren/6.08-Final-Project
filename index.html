@@ -19,7 +19,7 @@
   </ol>
   <p id="queue"></p>
 
-  <!-- <form action=""> 
+  <!-- <form action="">
     <select name="customers" onchange="getQueue(this.value)">
       <option value="">Select a customer:</option>
       <option value="ALFKI">Alfreds Futterkiste</option>
@@ -27,21 +27,19 @@
       <option value="WOLZA">Wolski Zajazd</option>
     </select>
   </form> -->
-
-  <button type="button" onclick="getQueue()">Get Queue</button>
-  <br>
-  <div id="txtHint">Requests info will be listed here...</div>
+  <!-- <button type="button" onclick="getQueue()">Get Queue</button>
+  <br> -->
+  <div id="txtHint">Queue info will be listed here...</div>
 
   <!-- <script type="text/javascript" src="jquery-1.8.1.min.js"></script> -->
   <script>
     var groupID = "defaultGroupID";
-
     window.onSpotifyWebPlaybackSDKReady = () => {
       groupID = prompt("Input Group ID");
       document.getElementById('groupID').innerHTML = groupID;
       var groupTokens = new Map();
-      groupTokens.set("test1", {spotify_token: 'BQDUNU2GaV6opkhfjJ922VowUSQikegzHyRcXyvfWkAUmDQBl0oBSp68_-LB67I3OuOOLSnt_kNkYyerzOPbPhbkjdJ4B3twZsxaI2S-oI92dc-is85086K7Uoj5hNCpJq1nruSwyvL9C1gmIbzHNxYh42uAazKazSuFGMyRjNvcBLq4I4zxyoA'});
-      groupTokens.set("brandon", {spotify_token: 'BQDUNU2GaV6opkhfjJ922VowUSQikegzHyRcXyvfWkAUmDQBl0oBSp68_-LB67I3OuOOLSnt_kNkYyerzOPbPhbkjdJ4B3twZsxaI2S-oI92dc-is85086K7Uoj5hNCpJq1nruSwyvL9C1gmIbzHNxYh42uAazKazSuFGMyRjNvcBLq4I4zxyoA'});
+      groupTokens.set("test1", {spotify_token: 'BQA89clj-lYRl2fjgd5-s5PEN6WBwX_620x8ispWrfn_vRlj2YNG6fufQE6rcozfCIL5Bg0AkzR331KigKBWUomU_Oh610Wola3zvBIFzFbB5FIIB-yY94q7-L_r1UGVmHSasiZ6KT1dqal42xJwJqGFkCBa4lbM9_SHyWfD8WBmb1z2bZcIGOQ'});
+      groupTokens.set("brandon", {spotify_token: 'BQA89clj-lYRl2fjgd5-s5PEN6WBwX_620x8ispWrfn_vRlj2YNG6fufQE6rcozfCIL5Bg0AkzR331KigKBWUomU_Oh610Wola3zvBIFzFbB5FIIB-yY94q7-L_r1UGVmHSasiZ6KT1dqal42xJwJqGFkCBa4lbM9_SHyWfD8WBmb1z2bZcIGOQ'});
       var groupName = document.getElementById('groupID').innerHTML;
       console.log("Group ID", groupID);
       console.log("Group Token", groupTokens.get(groupName));
@@ -82,10 +80,12 @@
 
       // Connect to the player!
       player.connect();
+      getQueue();
+      setInterval(getQueue, 1000)
     };
 
   function getQueue(str) {
-    var xhttp;  
+    var xhttp;
     // if (str == "") {
     //   document.getElementById("txtHint").innerHTML = "";
     //   return;
