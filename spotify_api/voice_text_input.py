@@ -77,7 +77,7 @@ def request_handler(request):
         group_name = request["values"]["group"]
         #Brandon and David added this field for returning more song info
         if group_name in VALID_GROUPS:
-            if request["values"]["requests"] is None:
+            if "requests" not in request["values"]:
                 queue_manager(sp, group_name)
                 with sqlite3.connect(ht_db) as c:
                     data = c.execute(
@@ -89,12 +89,14 @@ def request_handler(request):
                     genres = sp.artist(artist_uri).get('genres')
                     data = list(data)
                     data.append(genres)
-                    return data
+                    data2 = {"name": data[0], "tempo": data[1], "genres": genres}
+                    return data2
             else:
                 with sqlite3.connect(ht_db) as c:
                     data = c.execute(
                         """SELECT song_name, time_ FROM song_queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 3;""",(group_name,)).fetchall()
                     if data == None: return "No song currently requested"
+                    if len(data) == 0: return "No song currently requested"
                     return data
 
         else:
