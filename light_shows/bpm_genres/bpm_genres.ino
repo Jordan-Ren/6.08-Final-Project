@@ -133,30 +133,75 @@ void lookup(char* response) {
 void genre_setter(JsonArray genres) {
   for (JsonVariant gee : genres) {
       const char* text = gee.as<const char*>();
-      char * popo;
-      popo = strstr (text,"pop");
-      char * rocko;
-      rocko = strstr (text,"rock");
-      char * lowo;
-      lowo = strstr (text,"lo-fi");
-      if (rocko!=NULL) {
+      char * pop;
+      pop = strstr (text,"pop");
+      char * rock;
+      rock = strstr (text,"rock");
+      char * low;
+      low = strstr (text,"lo-fi");
+      char * indie;
+      indie = strstr (text,"indie");
+      char * folk;
+      folk = strstr (text,"folk");
+      char * latin;
+      latin = strstr (text,"latin");
+      char * metal;
+      metal = strstr (text,"metal");
+      char * jazz;
+      jazz = strstr (text,"jazz");
+      if (rock!=NULL) {
         r = 0;
         g = 70;
         b = 0;
         Serial.println(text);
         break;
-      } else if (popo!=NULL) {
+      } else if (pop!=NULL) {
         r = 70;
         g = 0;
         b = 0;
         Serial.println(text);
         break;
-      } else if (lowo!=NULL) {
+      } else if (low!=NULL) {
         r = 0;
         g = 10;
         b = 60;
         Serial.println(text);
         break;
+      } else if (indie!=NULL) {
+        r = 0;
+        g = 0;
+        b = 10;
+        Serial.println(text);
+        break;
+      } else if (folk!=NULL) {
+        r = 10;
+        g = 50;
+        b = 0;
+        Serial.println(text);
+        break;
+      } else if (latin!=NULL) {
+        r = 50;
+        g = 30;
+        b = 0;
+        Serial.println(text);
+        break;
+      } else if (metal!=NULL) {
+        r = 5;
+        g = 5;
+        b = 5;
+        Serial.println(text);
+        break;
+      } else if (jazz!=NULL) {
+        r = 50;
+        g = 0;
+        b = 30;
+        Serial.println(text);
+        break;
+      } else {
+        int char_text = int(text);
+        r = (char_text / 3) % 100;
+        g = (char_text / 5) % 100;
+        b = (char_text / 7) % 100;
       }
   }
 }
@@ -182,7 +227,7 @@ void lightshow(JsonArray genres, double bpm) {
       }
       else if(i < 100)
       {
-        leds[i] = CRGB(r+10, g+10, b+10);
+        leds[i] = CRGB(r+5, g+5, b+5);
       }
       else if(i < 150)
       {
@@ -214,7 +259,7 @@ void lightshow(JsonArray genres, double bpm) {
       }
       else if(i < 100)
       {
-        leds[i] = CRGB(r+10, g+10, b+10);
+        leds[i] = CRGB(r+5, g+5, b+5);
       }
       else if(i < 150)
       {
@@ -245,7 +290,7 @@ void lightshow(JsonArray genres, double bpm) {
       }
       else if(i < 100)
       {
-        leds[i] = CRGB(r+10, g+10, b+10);
+        leds[i] = CRGB(r+5, g+5, b+5);
       }
       else if(i < 150)
       {
