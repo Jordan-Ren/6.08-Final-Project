@@ -10,9 +10,9 @@
   <h2>Group ID</h2>
   <p id="groupID"></p>
   <h2>Spartify Queue</h2>
-  <h3>Current Song</h3>
-  <p id="currentSong">No current song</p>
-  <h3>Upcoming Songs </h3>
+  <h3>Currently Playing Song on This Device</h3>
+  <p id="currentSong">No currently playing song</p>
+  <h3>Upcoming Songs on This Device</h3>
   <ol>
     <li id="nextSong">No next song queued</li>
     <li id="nextnextSong">No next next song queued</li>
@@ -29,7 +29,12 @@
   </form> -->
   <!-- <button type="button" onclick="getQueue()">Get Queue</button>
   <br> -->
-  <div id="txtHint">Queue info will be listed here...</div>
+  <h3>Group Request Queue</h3>
+  <ol>
+    <li id="req0">First song in request queue will be listed here...</li>
+    <li id="req1">Second song in request queue will be listed here...</li>
+    <li id="req2">Third song in request queue will be listed here...</li>
+  </ol>
 
   <!-- <script type="text/javascript" src="jquery-1.8.1.min.js"></script> -->
   <script>
@@ -38,8 +43,8 @@
       groupID = prompt("Input Group ID");
       document.getElementById('groupID').innerHTML = groupID;
       var groupTokens = new Map();
-      groupTokens.set("test1", {spotify_token: 'BQA89clj-lYRl2fjgd5-s5PEN6WBwX_620x8ispWrfn_vRlj2YNG6fufQE6rcozfCIL5Bg0AkzR331KigKBWUomU_Oh610Wola3zvBIFzFbB5FIIB-yY94q7-L_r1UGVmHSasiZ6KT1dqal42xJwJqGFkCBa4lbM9_SHyWfD8WBmb1z2bZcIGOQ'});
-      groupTokens.set("brandon", {spotify_token: 'BQA89clj-lYRl2fjgd5-s5PEN6WBwX_620x8ispWrfn_vRlj2YNG6fufQE6rcozfCIL5Bg0AkzR331KigKBWUomU_Oh610Wola3zvBIFzFbB5FIIB-yY94q7-L_r1UGVmHSasiZ6KT1dqal42xJwJqGFkCBa4lbM9_SHyWfD8WBmb1z2bZcIGOQ'});
+      groupTokens.set("test1", {spotify_token: 'BQB4MyE2LAutXJEIthEpFkifFKoFTKn3wH8tAXzsGuaSI6IlTFqSKwExVw3vVYd9i8RuowI-114NOB1y0x_GSbIkrlQExAtUFSYmmvMTxhkABTlIvaDIYZ_kKCyOLdNFuaESPoP9cjmbnM2IVWUKQ-IVvB5MwfHBM8YJhsViOxHO4wryz8OxH70'});
+      groupTokens.set("brandon", {spotify_token: 'BQB4MyE2LAutXJEIthEpFkifFKoFTKn3wH8tAXzsGuaSI6IlTFqSKwExVw3vVYd9i8RuowI-114NOB1y0x_GSbIkrlQExAtUFSYmmvMTxhkABTlIvaDIYZ_kKCyOLdNFuaESPoP9cjmbnM2IVWUKQ-IVvB5MwfHBM8YJhsViOxHO4wryz8OxH70'});
       var groupName = document.getElementById('groupID').innerHTML;
       console.log("Group ID", groupID);
       console.log("Group Token", groupTokens.get(groupName));
@@ -94,10 +99,34 @@
     var groupName = document.getElementById('groupID').innerHTML;
     xhttp.onreadystatechange = function() {
       if (this.readyState == 4 && this.status == 200) {
-        document.getElementById("txtHint").innerHTML = this.responseText;
+        var tok = this.responseText;
+        tok = tok.replace(/[\[\]']+/g, '');
+        tok = tok.replace(/[{()}]/g, '');
+
+        var tokEle = tok.split(', ');
+        var i;
+        for (i = 0; i < 6; i++) {
+          if (i > tokEle.length-1) {
+            if (i == 0) {
+              document.getElementById("req0").innerHTML = "No song found in first position in request queue";
+            } else if (i == 2) {
+              document.getElementById("req1").innerHTML = "No song found in second position request queue";
+            } else if (i == 4) {
+              document.getElementById("req2").innerHTML = "No song found in third position in request queue";
+            }
+          } else {
+            if (i == 0) {
+              document.getElementById("req0").innerHTML = tokEle[i];
+            } else if (i == 2) {
+              document.getElementById("req1").innerHTML = tokEle[i];
+            } else if (i == 4) {
+              document.getElementById("req2").innerHTML = tokEle[i];
+            }
+          }
+        }
       }
     };
-    xhttp.open("GET", "http://608dev-2.net/sandbox/sc/team15/final/voice_text_input_with_secrets.py?group="+groupName+"?requests=yes", true);
+    xhttp.open("GET", "http://608dev-2.net/sandbox/sc/team15/final/voice_text_input_with_secrets.py?group="+groupName+"&requests=yes", true);
     xhttp.send();
   }
 

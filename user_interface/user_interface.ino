@@ -54,7 +54,11 @@ char recorded_transcript[100] = {0};
 //Prefix to POST request:
 const char PREFIX[] = "{\"config\":{\"encoding\":\"MULAW\",\"sampleRateHertz\":8000,\"languageCode\": \"en-US\"," \
 "\"speechContexts\":[{\"phrases\":[\"play despacito\",\"pause\", \"resume\", \"skip\", \"queue\", \"add\", \"play\"," \
+<<<<<<< HEAD
 "\"please\", \"parasite eve\", \"can you please\", \"to the queue\", \"next\", \"next song\", \"song\", \"now\", \"by\", \"clear\"," \
+=======
+"\"please\", \"can you please\", \"to the queue\", \"next\", \"next song\", \"song\", \"now\", \"by\", \"clear\"," \
+>>>>>>> 71bcd7ddbfad2cdf40d3194819494bd1cd2a087b
 "\"resume\", \"queue up\"]}]}, \"audio\": {\"content\":\"";
 const char SUFFIX[] = "\"}}"; //suffix to POST request
 const int AUDIO_IN = A0; //pin where microphone is connected
@@ -77,7 +81,7 @@ uint32_t time_since_sample;      // used for microsecond timing
 
 
 char speech_data[ENC_LEN + 200] = {0}; //global used for collecting speech data
-const char* NETWORK = "MIT";     // your network SSID (name of wifi network)
+const char* NETWORK     = "MIT";     // your network SSID (name of wifi network)
 const char* PASSWORD = ""; // your network password
 const char*  SERVER = "speech.google.com";  // Server URL
 
@@ -85,6 +89,9 @@ uint8_t old_val;
 uint32_t timer;
 
 WiFiClientSecure client; //global WiFiClient Secure object
+
+TaskHandle_t Task1;
+TaskHandle_t Task2;
 
 void setup() {
   Serial.begin(115200);               // Set up serial port
@@ -126,6 +133,16 @@ void setup() {
   tft.setCursor(0,0);
   tft.println("Hold button to record");
   FastLED.addLeds<WS2812, LED, GRB>(leds, NUM_LEDS);
+
+  //CORE TESTING
+  xTaskCreatePinnedToCore(
+      pulse_to_bpm, /* Function to implement the task */
+      "Task1", /* Name of the task */
+      10000,  /* Stack size in words */
+      NULL,  /* Task input parameter */
+      0,  /* Priority of the task */
+      &Task1,  /* Task handle. */
+      0); /* Core where the task should run */
 }
 
 //main body of code
@@ -154,7 +171,11 @@ void loop() {
   //pulse_to_bpm(100, 0, 0, 125);
 }
 
-void pulse_to_bpm(uint8_t r, uint8_t g, uint8_t b, int bpm) {
+void pulse_to_bpm(void * pvParameters) {
+  uint8_t r = 100;
+  uint8_t g = 0;
+  uint8_t b = 0;
+  int bpm = 125;
   int de = int((60.0/bpm)*1000*.85); // NOTE: TIMING STILL OFF FIX
   while (true) {
     fade_out(r, g, b);
