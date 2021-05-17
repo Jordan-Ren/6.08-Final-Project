@@ -54,7 +54,7 @@ char recorded_transcript[100] = {0};
 //Prefix to POST request:
 const char PREFIX[] = "{\"config\":{\"encoding\":\"MULAW\",\"sampleRateHertz\":8000,\"languageCode\": \"en-US\"," \
 "\"speechContexts\":[{\"phrases\":[\"play despacito\",\"pause\", \"resume\", \"skip\", \"queue\", \"add\", \"play\"," \
-"\"please\", \"can you please\", \"to the queue\", \"next\", \"next song\", \"song\", \"now\", \"by\", \"clear\"," \
+"\"please\", \"parasite eve\", \"can you please\", \"to the queue\", \"next\", \"next song\", \"song\", \"now\", \"by\", \"clear\"," \
 "\"resume\", \"queue up\"]}]}, \"audio\": {\"content\":\"";
 const char SUFFIX[] = "\"}}"; //suffix to POST request
 const int AUDIO_IN = A0; //pin where microphone is connected
@@ -77,8 +77,8 @@ uint32_t time_since_sample;      // used for microsecond timing
 
 
 char speech_data[ENC_LEN + 200] = {0}; //global used for collecting speech data
-const char* NETWORK     = "NightHawk_5G";     // your network SSID (name of wifi network)
-const char* PASSWORD = "steven322"; // your network password
+const char* NETWORK = "MIT";     // your network SSID (name of wifi network)
+const char* PASSWORD = ""; // your network password
 const char*  SERVER = "speech.google.com";  // Server URL
 
 uint8_t old_val;
