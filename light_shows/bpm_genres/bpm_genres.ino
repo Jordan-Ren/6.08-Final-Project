@@ -258,7 +258,15 @@ void loop()
     } else {
       for(int y = maxi; y < 150; y++)
       {
-        leds[y] = CRGB(rand() % 40, rand() % 10, rand() % 10); // 0,0,0
+        double rrr = ((double) rand() / (RAND_MAX));
+        if (rrr > 0.8)
+        {
+          leds[y] = CRGB(r + rand() % 10, g + rand() % 5, b + rand() % 5); // 0,0,0
+        }
+        else
+        {
+          leds[y] = CRGB(0, 0, 0);
+        }
       }
       FastLED.show();
     }
