@@ -175,16 +175,11 @@ def add_user(group_n, user_name):
             c.execute("""INSERT into song_users VALUES (?,?,?,?)""",
                         (group_n, user_name, .5, 1))
             res = c.execute("""SELECT * FROM song_users;""").fetchall()
-        else:
-            print("User already added")
-            print(res)
 
 def update_user_popularity(group_n, user_n, vote):
     with sqlite3.connect(ht_db) as c:
-        print("Upvote for user:", user_n)
         res = c.execute("""SELECT popularity, votes FROM song_users WHERE group_name = ? AND user_name = ?;""",
                             (group_n, user_n)).fetchall()
-        print(res)
         prev_pop, tot_votes = res[0]
         new_popularity = (vote + prev_pop*tot_votes) / (tot_votes+1)
         c.execute("""UPDATE song_users SET popularity = ?, votes = ? WHERE group_name = ? AND user_name = ?""", (new_popularity, tot_votes + 1, group_n, user_n))
@@ -385,6 +380,7 @@ def queue_manager(sp, group_name):
             sp = spotipy.Spotify(auth_manager=auth_manager)
             for i in range(its):
                 add_song_to_queue(sp, uri=reqed_songs[i][0])
+                c.execute("""UPDATE song_queue SET status = ? WHERE group_name = ? AND user_name = ? AND song_uri = ?""", ("queued", group_name, reqed_songs[i][1], reqed_songs[i][0]))
     
     currently_playing = sp.currently_playing().get('item')
     if currently_playing:
