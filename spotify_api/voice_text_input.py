@@ -148,17 +148,18 @@ def get_queue():
 def create_db():
     try:
         with sqlite3.connect(ht_db) as c:
-            c.execute("""CREATE TABLE IF NOT EXISTS song_queue (time_ timestamp, group_name text, song_name text, song_uri text, 
+            c.execute("""CREATE TABLE IF NOT EXISTS song_queue (time_ timestamp, group_name text, user_name text, status text, song_name text, song_uri text, 
             tempo real, energy real, time_signature integer, danceability real, segments text);""")
+            
     except:
-        raise Exception("Could not create song_queue db")
+        raise Exception("Could not create song_queue table")
 
 def create_users_db():
     try:
         with sqlite3.connect(ht_db) as c:
             c.execute("""CREATE TABLE IF NOT EXISTS song_users (group_name text, user_name text, popularity real, votes real);""")
     except:
-        raise Exception("Could not create users db")
+        raise Exception("Could not create users table")
 
 def add_user(group_n, user_name):
     with sqlite3.connect(ht_db) as c:
@@ -183,10 +184,21 @@ def update_user_popularity(group_n, user_n, vote):
         c.execute("""UPDATE song_users SET popularity = ?, votes = ? WHERE group_name = ? AND user_name = ?""", (new_popularity, tot_votes + 1, group_n, user_n))
         res = c.execute("""SELECT * FROM song_users WHERE group_name = ? AND user_name = ?;""",
                             (group_n, user_n)).fetchall()
-        print("Updated popularity values below!")
-        print(res)
+        # print("Updated popularity values below!")
+        # print(res)
 
-
+def like_dislike_user(vote):
+    song = sp.currently_playing()
+    if song is not None:
+        song_uri = currently_playing.get('uri')
+        with sqlite3.connect(ht_db) as c:
+            data = c.execute("""SELECT group_name, user_name FROM song_queue WHERE status = ? AND song_uri = ? INNER JOIN song_users ON song_queue.user_name = song_users.user_name""",("queued", song_uri))
+            try:
+                group_name = data[0][0]
+                user = data[0][0]
+                update_user_popularity(group_name, user_name, vote)
+            else:
+                raise Exception("Could not find user for like/dislike")
 
 def add_song_to_db(sp, song_uri, song_name, group_name):
     create_db()
@@ -345,7 +357,24 @@ def get_audio_features(sp, song_uri):
                 res.get('sections')]
     return tempo, energy, time_signature, danceability, segments
 
+def get_queue():
+    with sqlite3.connect(ht_db) as c:
+        res = c.execute("""SELECT song_uri FROM song_queue WHERE status = ? ORDER BY time_ ASC;""",
+                        ('queued',)).fetchall()
+        return res
+
 def queue_manager(sp, group_name):
+    songs_on_queue = get_queue()
+    if len(songs_on_queue) < 3:
+        with sqlite3.connect(ht_db) as c:
+            songs_to_add = 3 - len(res)
+            reqed_songs = c.execute("""SELECT song_uri, user FROM song_queue WHERE status = ? ORDER BY time_ ASC;""",
+                        ('requested',)).fetchall()
+            its = min(songs_to_add, len(reqed_songs))
+            sp = spotipy.Spotify(auth_manager=auth_manager)
+            for i in range(its):
+                add_song_to_queue(sp, uri=reqed_songs[i][0])
+    
     currently_playing = sp.currently_playing().get('item')
     if currently_playing:
         song_uri = currently_playing.get('uri')
