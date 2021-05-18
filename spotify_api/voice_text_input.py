@@ -64,6 +64,18 @@ def request_handler(request):
                     next_song = skip_song(group_name)
                     sp.next_track()
                     return f"The next song in the queue is {next_song}"
+                elif command == "like":
+                    with sqlite3.connect(ht_db) as c:
+                        data = c.execute(
+                            """SELECT user_name FROM song_queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 1;""",
+                            (group_name,)).fetchone()
+                        update_user_popularity(group_name, data[0], 1)
+                elif command == "dislike":
+                    with sqlite3.connect(ht_db) as c:
+                        data = c.execute(
+                            """SELECT user_name FROM song_queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 1;""",
+                            (group_name,)).fetchone()
+                        update_user_popularity(group_name, data[0], 0)
                 elif command == "None":
                     return "Invalid voice input, please try again"
                 return response
@@ -181,6 +193,7 @@ def update_user_popularity(group_n, user_n, vote):
         # print("Updated popularity values below!")
         # print(res)
 
+
 def like_dislike_user(vote):
     song = sp.currently_playing()
     if song is not None:
@@ -206,7 +219,7 @@ def add_song_to_db(sp, song_uri, song_name, group_name, user_name, status):
         raise Exception("Could not get audio analysis")
     try:
         with sqlite3.connect(ht_db) as c:
-            c.execute("""INSERT into song_queue VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+            c.execute("""INSERT into song_queue VALUES (?,?,?,?,?,?,?,?,?,?)""",
                       (now, group_name, user_name, status, song_name, song_uri, tempo, energy,
                        time_signature, danceability,
                        json.dumps(segments)))
@@ -292,6 +305,10 @@ def parse_voice_input(voice_input):
             command = "resume"
         elif "clear" in input_list:
             return "clear", None
+        elif "like" in input_list:
+            command = "like"
+        elif "dislike" in input_list:
+            command = "dislike"
         else:
             command = "No Command"
         return command, data

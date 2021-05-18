@@ -62,7 +62,7 @@ char recorded_transcript[100] = {0};
 const char PREFIX[] = "{\"config\":{\"encoding\":\"MULAW\",\"sampleRateHertz\":8000,\"languageCode\": \"en-US\"," \
 "\"speechContexts\":[{\"phrases\":[\"play despacito\",\"pause\", \"resume\", \"skip\", \"queue\", \"add\", \"play\"," \
 "\"please\", \"parasite eve\", \"can you please\", \"to the queue\", \"next\", \"next song\", \"song\", \"now\", \"by\", \"clear\"," \
-"\"resume\", \"queue up\"]}]}, \"audio\": {\"content\":\"";
+"\"resume\", \"queue up\", \"like\", \"dislike\"]}]}, \"audio\": {\"content\":\"";
 const char SUFFIX[] = "\"}}"; //suffix to POST request
 const int AUDIO_IN = A0; //pin where microphone is connected
 const char API_KEY[] = "AIzaSyCwyynsePu7xijUYTOgR7NdVqxH2FAG9DQ"; //don't change this
