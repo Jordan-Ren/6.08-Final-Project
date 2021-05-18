@@ -70,6 +70,18 @@ def request_handler(request):
                     next_song = skip_song(group_name)
                     sp.next_track()
                     return f"The next song in the queue is {next_song}"
+                elif command == "like":
+                    with sqlite3.connect(ht_db) as c:
+                        data = c.execute(
+                            """SELECT user_name FROM song_queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 1;""",
+                            (group_name,)).fetchone()
+                        update_user_popularity(group_name, data[0], 1)
+                elif command == "dislike":
+                    with sqlite3.connect(ht_db) as c:
+                        data = c.execute(
+                            """SELECT user_name FROM song_queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 1;""",
+                            (group_name,)).fetchone()
+                        update_user_popularity(group_name, data[0], 0)
                 elif command == "None":
                     return "Invalid voice input, please try again"
                 return response
@@ -148,7 +160,7 @@ def get_queue():
 def create_db():
     try:
         with sqlite3.connect(ht_db) as c:
-            c.execute("""CREATE TABLE IF NOT EXISTS song_queue (time_ timestamp, group_name text, song_name text, song_uri text, 
+            c.execute("""CREATE TABLE IF NOT EXISTS song_queue (time_ timestamp, group_name text, user_name text, song_name text, song_uri text,
             tempo real, energy real, time_signature integer, danceability real, segments text);""")
     except:
         raise Exception("Could not create song_queue db")
@@ -188,7 +200,7 @@ def update_user_popularity(group_n, user_n, vote):
 
 
 
-def add_song_to_db(sp, song_uri, song_name, group_name):
+def add_song_to_db(sp, song_uri, song_name, group_name, user_name):
     create_db()
     create_users_db()
     if len(get_queue()) == 0:
@@ -200,8 +212,8 @@ def add_song_to_db(sp, song_uri, song_name, group_name):
         raise Exception("Could not get audio analysis")
     try:
         with sqlite3.connect(ht_db) as c:
-            c.execute("""INSERT into song_queue VALUES (?,?,?,?,?,?,?,?,?)""",
-                      (now, group_name, song_name, song_uri, tempo, energy,
+            c.execute("""INSERT into song_queue VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                      (now, group_name, user_name, song_name, song_uri, tempo, energy,
                        time_signature, danceability,
                        json.dumps(segments)))
     except:
@@ -286,6 +298,10 @@ def parse_voice_input(voice_input):
             command = "resume"
         elif "clear" in input_list:
             return "clear", None
+        elif "like" in input_list:
+            command = "like"
+        elif "dislike" in input_list:
+            command = "dislike"
         else:
             command = "No Command"
         return command, data
