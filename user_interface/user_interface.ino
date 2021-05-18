@@ -405,7 +405,12 @@ void lightshow(JsonArray genres, double bpm) {
   tft.setCursor(20, 20, 1);
   tft.setTextColor(TFT_BLUE, TFT_BLACK);
 
-  double time_pass = min(60.0*1000.0/bpm, 5000);
+  if (bpm != 0) {
+    double time_pass = 60.0*1000.0/bpm;
+  } else {
+    double time_pass = 5000;
+  }
+  
   int start_timer = millis();
   
   for(int weep = 0; weep < maxi; weep++)
