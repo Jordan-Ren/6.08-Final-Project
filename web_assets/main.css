@@ -6,10 +6,21 @@ body, input, select, textarea {
 }
 
 h1 {
-    color: #585858;
+    color: #FFFFFF;
     font-family: "Montserrat";
     font-size: 24pt;
     font-weight: 900;
     line-height: 1.75;
     text-align: center;
 }
+
+#navlogo { 
+    height: 100px;
+    width: 100px;
+}
+
+#cont {
+    width:100%;
+    margin-top: 50px;
+}
+
