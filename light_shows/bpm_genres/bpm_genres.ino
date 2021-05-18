@@ -17,6 +17,7 @@ int g = 0;
 
 JsonArray genres;
 double bpm = 100.0;
+double old_bpm = 100.0;
 int loop_timer;
 
 char group[] = "test1";
@@ -107,14 +108,10 @@ void lookup(char* response) {
   
   // Fetch values.
   //  char name[100] = {'\0'};
+  old_bpm = bpm;
   bpm = doc["tempo"];
   Serial.print("bpm: ");
   Serial.println(bpm);
-  if (bpm < 70.0) {
-    bpm = 30.0;
-  } else if (bpm > 150.0) {
-    bpm = 300.0;
-  }
 
   Serial.print("genre: ");
   genres = doc["genres"].as<JsonArray>();
@@ -149,6 +146,8 @@ void genre_setter(JsonArray genres) {
       metal = strstr (text,"metal");
       char * jazz;
       jazz = strstr (text,"jazz");
+      char * rap;
+      rap = strstr (text,"rap");
       if (rock!=NULL) {
         r = 0;
         g = 70;
@@ -197,6 +196,12 @@ void genre_setter(JsonArray genres) {
         b = 30;
         Serial.println(text);
         break;
+      } else if (rap!=NULL) {
+        r = 50;
+        g = 50;
+        b = 10;
+        Serial.println(text);
+        break;
       } else {
         int char_text = int(text);
         r = (char_text / 3) % 100;
@@ -207,6 +212,7 @@ void genre_setter(JsonArray genres) {
 }
 
 double grad = 0.1;
+int maxi = 150;
 void lightshow(JsonArray genres, double bpm) {
   tft.fillScreen(TFT_BLACK); //fill background
   tft.setCursor(20, 20, 1);
@@ -216,14 +222,14 @@ void lightshow(JsonArray genres, double bpm) {
   double time_pass = 60.0*1000.0/bpm;
   int start_timer = millis();
   
-  for(int weep = 0; weep < 150; weep++)
+  for(int weep = 0; weep < maxi; weep++)
   {
     int one = weep/1;
     for(int i = 0; i < one; i++)
     {
       leds[i] = CRGB(int(r+(grad*i)), int(g+(grad*i)), int(b+(grad*i)));
     }
-    for(int ii = one; ii < 150; ii++)
+    for(int ii = one; ii < maxi; ii++)
     {
       leds[ii] = CRGB(0, 0, 0);
     }
@@ -242,6 +248,20 @@ void loop()
 {
   if (millis() - loop_timer > 10000) {
     lookup(response);
+    if (old_bpm != bpm) {
+      for(int y = 0; y < 150; y++)
+      {
+        leds[y] = CRGB(rand() % 40, rand() % 10, rand() % 10); // 0,0,0
+      }
+      FastLED.show();
+      maxi = (int) 150 * (bpm / 300);
+    } else {
+      for(int y = maxi; y < 150; y++)
+      {
+        leds[y] = CRGB(rand() % 40, rand() % 10, rand() % 10); // 0,0,0
+      }
+      FastLED.show();
+    }
   //  Serial.println(response);
   }
   
