@@ -211,6 +211,7 @@ void genre_setter(JsonArray genres) {
   }
 }
 
+bool bidirectional = true;
 double grad = 0.1;
 int maxi = 150;
 void lightshow(JsonArray genres, double bpm) {
@@ -228,10 +229,16 @@ void lightshow(JsonArray genres, double bpm) {
     for(int i = 0; i < one; i++)
     {
       leds[i] = CRGB(int(r+(grad*i)), int(g+(grad*i)), int(b+(grad*i)));
+      if (bidirectional) {
+        leds[150 - i] = CRGB(int(r+(grad*i)), int(g+(grad*i)), int(b+(grad*i)));
+      }
     }
     for(int ii = one; ii < maxi; ii++)
     {
       leds[ii] = CRGB(0, 0, 0);
+      if (bidirectional) {
+        leds[150 - ii] = CRGB(0, 0, 0);
+      }
     }
     FastLED.show();
   }
