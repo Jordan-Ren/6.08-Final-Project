@@ -206,7 +206,7 @@ void genre_setter(JsonArray genres) {
   }
 }
 
-
+double grad = 0.1;
 void lightshow(JsonArray genres, double bpm) {
   tft.fillScreen(TFT_BLACK); //fill background
   tft.setCursor(20, 20, 1);
@@ -221,18 +221,7 @@ void lightshow(JsonArray genres, double bpm) {
     int one = weep/1;
     for(int i = 0; i < one; i++)
     {
-      if(i < 50)
-      {
-        leds[i] = CRGB(r+0, g+0, b+0);
-      }
-      else if(i < 100)
-      {
-        leds[i] = CRGB(r+5, g+5, b+5);
-      }
-      else if(i < 150)
-      {
-        leds[i] = CRGB(r+20, g+20, b+20);
-      }
+      leds[i] = CRGB(int(r+(grad*i)), int(g+(grad*i)), int(b+(grad*i)));
     }
     for(int ii = one; ii < 150; ii++)
     {
@@ -245,70 +234,6 @@ void lightshow(JsonArray genres, double bpm) {
   while ((millis() - start_timer) < time_pass) {
     FastLED.show();
   }
-  start_timer = millis();
-  
-
-  for(int weep = 0; weep < 150; weep++)
-  {
-    int one = weep/1;
-    for(int i = 0; i < one; i++)
-    {
-      if(i < 50)
-      {
-        leds[i] = CRGB(r+0, g+0, b+0);
-      }
-      else if(i < 100)
-      {
-        leds[i] = CRGB(r+5, g+5, b+5);
-      }
-      else if(i < 150)
-      {
-        leds[i] = CRGB(r+20, g+20, b+20);
-      }
-    }
-    for(int ii = one; ii < 150; ii++)
-    {
-      leds[ii] = CRGB(0, 0, 0);
-    }
-    FastLED.show();
-  }
-
-  // !!!!!!!!!!!!!!!!!
-  while ((millis() - start_timer) < time_pass) {
-    FastLED.show();
-  }
-  start_timer = millis();
-
-  for(int weep = 0; weep < 150; weep++)
-  {
-    int one = weep/1;
-    for(int i = 0; i < one; i++)
-    {
-      if(i < 50)
-      {
-        leds[i] = CRGB(r+0, g+0, b+0);
-      }
-      else if(i < 100)
-      {
-        leds[i] = CRGB(r+5, g+5, b+5);
-      }
-      else if(i < 150)
-      {
-        leds[i] = CRGB(r+20, g+20, b+20);
-      }
-    }
-    for(int ii = one; ii < 150; ii++)
-    {
-      leds[ii] = CRGB(0, 0, 0);
-    }
-    FastLED.show();
-  }
-
-  // !!!!!!!!!!!!!!!!!
-  while ((millis() - start_timer) < time_pass) {
-    FastLED.show();
-  }
-
   
 }
 
