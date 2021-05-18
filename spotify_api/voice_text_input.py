@@ -11,8 +11,8 @@ SPOTIFY_CLIENT_SECRET = ""
 ACCESS_TOKEN = ""
 
 server_user = 'team15'
-#ht_db = f'/var/jail/home/{server_user}/final/song_queue.db'
-ht_db = 'test.db'
+ht_db = f'/var/jail/home/{server_user}/final/song_queue.db'
+# ht_db = 'test.db'
 BASE_URL = 'https://api.spotify.com/v1/'
 
 scope = "user-read-currently-playing user-top-read user-read-recently-played user-read-playback-state " \
@@ -28,7 +28,7 @@ def request_handler(request):
                                                show_dialog=True, client_id=SPOTIFY_CLIENT_ID,
                                                client_secret=SPOTIFY_CLIENT_SECRET,
                                                redirect_uri="http://example.com")
-    
+
     if request['method'] == "POST":
         if request["form"].get('code'):
             auth_manager.get_access_token(request["form"]["code"])
@@ -51,7 +51,7 @@ def request_handler(request):
                     add_song_to_db(sp, song_uri=response.get("track_uri"), song_name=response.get("song_name"),
                                    group_name=group_name, user_name=username)
                     # add_song_to_queue(sp, response['track_uri'])
-                    add_user(group_n = group_name, user_name = username)
+                    add_user(group_n=group_name, user_name=username)
                     return f"Song: {response.get('song_name')} added to the requests queue"
                 elif command == "pause":
                     pause(sp)
@@ -64,14 +64,16 @@ def request_handler(request):
                     return "Cleared Queue"
                 elif command == "skip":
                     sp.next_track()
-                    next_song = skip_song(sp, group_name)
-                    return f"The next song in the queue is {next_song}"
+                    current_song = skip_song(sp, group_name)
+                    return f"The next song in the queue is {current_song}"
                 elif command == "like":
                     user = like_dislike_user(sp, 1)
                     return f"You liked {user}'s song"
                 elif command == "dislike":
                     user = like_dislike_user(sp, 0)
                     return f"You disliked {user}'s song"
+                elif command == "testing":
+                    return [x[4] for x in get_queue()]
                 elif command == "None":
                     return "Invalid voice input, please try again"
                 return response
@@ -83,7 +85,7 @@ def request_handler(request):
         try:
             sp = spotipy.Spotify(auth_manager=auth_manager)
             group_name = request["values"]["group"]
-            #Brandon and David added this field for returning more song info
+            # Brandon and David added this field for returning more song info
             if group_name in VALID_GROUPS:
                 if "requests" not in request["values"]:
                     queue_manager(sp, group_name)
@@ -104,7 +106,8 @@ def request_handler(request):
                 else:
                     with sqlite3.connect(ht_db) as c:
                         data = c.execute(
-                            """SELECT song_name, time_ FROM song_queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 3;""",(group_name,)).fetchall()
+                            """SELECT song_name, time_ FROM song_queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 3;""",
+                            (group_name,)).fetchall()
                         if not data:
                             return {"name": "", "tempo": 0, "genres": ["empty"]}
                         if len(data) == 0:
@@ -126,13 +129,16 @@ def clear_queue():
 
 def skip_song(sp, group_name):
     with sqlite3.connect(ht_db) as c:
-        res = c.execute("""SELECT time_ FROM song_queue WHERE status = ? AND group_name = ? ORDER BY time_ ASC LIMIT 1;""",
-                        ("queued", group_name,)).fetchone()
+        res = c.execute(
+            """SELECT time_ FROM song_queue WHERE status = ? AND group_name = ? ORDER BY time_ ASC LIMIT 1;""",
+            ("queued", group_name,)).fetchone()
         if res:
             c.execute("""DELETE FROM song_queue WHERE time_ = ?""", (res[0],))
             # queue_manager(sp, group_name)
-            next_song = sp.currently_playing().get('item')
-            next_song = next_song.get("name")
+            current_song = sp.currently_playing().get('item')
+            if current_song:
+                current_song = current_song.get("name")
+            return current_song
             # currently_playing = sp.currently_playing().get('item')
             # res = c.execute("""SELECT song_name FROM song_queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 1;""",
             #             (group_name,)).fetchone()
@@ -140,14 +146,13 @@ def skip_song(sp, group_name):
             #     next_song = res[0]
             # else:
             #     next_song = None
-            return next_song
         return None
 
 
 def get_queue():
     try:
         with sqlite3.connect(ht_db) as c:
-            res = c.execute("""SELECT * from song_queue""").fetchall()
+            res = c.execute("""SELECT * from song_queue WHERE status = 'queued'""").fetchall()
             return res
     except:
         return "Database does not exist"
@@ -158,36 +163,42 @@ def create_db():
         with sqlite3.connect(ht_db) as c:
             c.execute("""CREATE TABLE IF NOT EXISTS song_queue (time_ timestamp, group_name text, user_name text, status text, song_name text, song_uri text, 
             tempo real, energy real, time_signature integer, danceability real, segments text);""")
-            
+
     except:
         raise Exception("Could not create song_queue table")
+
 
 def create_users_db():
     try:
         with sqlite3.connect(ht_db) as c:
-            c.execute("""CREATE TABLE IF NOT EXISTS song_users (group_name text, user_name text, popularity real, votes real);""")
+            c.execute(
+                """CREATE TABLE IF NOT EXISTS song_users (group_name text, user_name text, popularity real, votes real);""")
     except:
         raise Exception("Could not create users table")
 
+
 def add_user(group_n, user_name):
     with sqlite3.connect(ht_db) as c:
-        res = c.execute("""SELECT * FROM song_users WHERE group_name = ? AND user_name = ?;""", (group_n, user_name,)).fetchall()
+        res = c.execute("""SELECT * FROM song_users WHERE group_name = ? AND user_name = ?;""",
+                        (group_n, user_name,)).fetchall()
         if res is None or len(res) == 0:
             res = c.execute("""SELECT * FROM song_users;""").fetchall()
             c.execute("""INSERT into song_users VALUES (?,?,?,?)""",
-                        (group_n, user_name, .5, 1))
+                      (group_n, user_name, .5, 1))
             res = c.execute("""SELECT * FROM song_users;""").fetchall()
+
 
 def update_user_popularity(group_n, user_n, vote):
     with sqlite3.connect(ht_db) as c:
         res = c.execute("""SELECT popularity, votes FROM song_users WHERE group_name = ? AND user_name = ?;""",
-                            (group_n, user_n)).fetchall()
+                        (group_n, user_n)).fetchall()
         if len(res) > 0:
             prev_pop, tot_votes = res[0]
-            new_popularity = (vote + prev_pop*tot_votes) / (tot_votes+1)
-            c.execute("""UPDATE song_users SET popularity = ?, votes = ? WHERE group_name = ? AND user_name = ?""", (new_popularity, tot_votes + 1, group_n, user_n))
+            new_popularity = (vote + prev_pop * tot_votes) / (tot_votes + 1)
+            c.execute("""UPDATE song_users SET popularity = ?, votes = ? WHERE group_name = ? AND user_name = ?""",
+                      (new_popularity, tot_votes + 1, group_n, user_n))
             res = c.execute("""SELECT * FROM song_users WHERE group_name = ? AND user_name = ?;""",
-                                (group_n, user_n)).fetchall()
+                            (group_n, user_n)).fetchall()
         # print("Updated popularity values below!")
         # print(res)
 
@@ -197,7 +208,8 @@ def like_dislike_user(sp, vote):
     if currently_playing is not None:
         song_uri = currently_playing.get('uri')
         with sqlite3.connect(ht_db) as c:
-            data = c.execute("""SELECT group_name, user_name FROM song_queue WHERE status = ? AND song_uri = ? """,("queued", song_uri)).fetchall()
+            data = c.execute("""SELECT group_name, user_name FROM song_queue WHERE status = ? AND song_uri = ? """,
+                             ("queued", song_uri)).fetchall()
 
             try:
                 group_name = data[0][0]
@@ -206,6 +218,7 @@ def like_dislike_user(sp, vote):
                 return user
             except:
                 raise Exception("Could not find user for like/dislike")
+
 
 def add_song_to_db(sp, song_uri, song_name, group_name, user_name):
     create_db()
@@ -216,7 +229,7 @@ def add_song_to_db(sp, song_uri, song_name, group_name, user_name):
     else:
         status = "requested"
     try:
-        tempo, energy, time_signature, danceability, segments= get_audio_features(sp, song_uri)
+        tempo, energy, time_signature, danceability, segments = get_audio_features(sp, song_uri)
         now = datetime.datetime.now()
     except:
         raise Exception("Could not get audio analysis")
@@ -228,7 +241,6 @@ def add_song_to_db(sp, song_uri, song_name, group_name, user_name):
                        json.dumps(segments)))
     except:
         raise Exception("Could not add song to db")
-
 
 
 def clean_input(voice_input):
@@ -312,6 +324,8 @@ def parse_voice_input(voice_input):
             command = "like"
         elif "dislike" in input_list:
             command = "dislike"
+        elif "testing" in input_list:
+            command = "testing"
         else:
             command = "No Command"
         return command, data
@@ -346,6 +360,7 @@ def get_song_uri(sp, song, artist):
     except:
         raise Exception("Could not get song uri")
 
+
 def play_song(sp, song_uri):
     sp.start_playback(uris=[song_uri], position_ms=0)
 
@@ -371,6 +386,7 @@ def get_audio_features(sp, song_uri):
                 res.get('sections')]
     return tempo, energy, time_signature, danceability, segments
 
+
 # def get_queue():
 #     with sqlite3.connect(ht_db) as c:
 #         res = c.execute("""SELECT song_uri FROM song_queue WHERE status = ? ORDER BY time_ ASC;""",
@@ -382,27 +398,36 @@ def queue_manager(sp, group_name):
     if len(songs_on_queue) < 3:
         with sqlite3.connect(ht_db) as c:
             songs_to_add = 3 - len(songs_on_queue)
-            reqed_songs = c.execute("""SELECT song_uri, user_name FROM song_queue WHERE status = ? ORDER BY time_ ASC;""",
-                        ('requested',)).fetchall()
+            reqed_songs = c.execute(
+                """SELECT song_uri, user_name FROM song_queue WHERE status = ? ORDER BY time_ ASC;""",
+                ('requested',)).fetchall()
             its = min(songs_to_add, len(reqed_songs))
             for i in range(its):
                 reqed_users = {x[1] for x in reqed_songs}
-                user_pops = c.execute("""SELECT user_name, popularity FROM song_users WHERE group_name = ?""", (group_name,)).fetchall()
+                user_pops = c.execute("""SELECT user_name, popularity FROM song_users WHERE group_name = ?""",
+                                      (group_name,)).fetchall()
                 users_ = [x for x in user_pops if x[0] in reqed_users]
                 if len(users_) > 0:
                     best_user = max(users_, key=lambda x: x[1])[0]
-                    song = c.execute("""SELECT song_uri FROM song_queue WHERE user_name = ? AND group_name = ? ORDER BY time_ ASC LIMIT 1""", (best_user, group_name,)).fetchone()
+                    song = c.execute(
+                        """SELECT song_uri FROM song_queue WHERE user_name = ? AND group_name = ? AND status = 'requested' ORDER BY time_ ASC LIMIT 1""",
+                        (best_user, group_name,)).fetchone()
 
                     add_song_to_queue(sp, song_uri=song[0])
-                    c.execute("""UPDATE song_queue SET status = ? WHERE status = ? AND group_name = ? AND user_name = ? AND song_uri = ? AND time_ = ?""", ("queued", "requested", group_name, best_user, song[0], datetime.datetime.now()))
-                    reqed_songs = c.execute("""SELECT song_uri, user_name FROM song_queue WHERE status = ? ORDER BY time_ ASC;""", ('requested',)).fetchall()
+                    c.execute(
+                        """UPDATE song_queue SET status = ?, time_ = ? WHERE group_name = ? AND user_name = ? AND song_uri = ?""",
+                        ("queued", datetime.datetime.now(), group_name, best_user, song[0]))
+                    reqed_songs = c.execute(
+                        """SELECT song_uri, user_name FROM song_queue WHERE status = ? ORDER BY time_ ASC;""",
+                        ('requested',)).fetchall()
 
     currently_playing = sp.currently_playing().get('item')
     if currently_playing:
         song_uri = currently_playing.get('uri')
         with sqlite3.connect(ht_db) as c:
-            res = c.execute("""SELECT song_uri FROM song_queue WHERE status = ? AND group_name = ? ORDER BY time_ ASC LIMIT 1;""",
-                            ("queued", group_name,)).fetchone()
+            res = c.execute(
+                """SELECT song_uri FROM song_queue WHERE status = ? AND group_name = ? ORDER BY time_ ASC LIMIT 1;""",
+                ("queued", group_name,)).fetchone()
         if res:
             res = res[0]
         if res and song_uri != res:
