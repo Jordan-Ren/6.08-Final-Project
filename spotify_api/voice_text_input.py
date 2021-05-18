@@ -45,18 +45,12 @@ def request_handler(request):
             command, data = parse_voice_input(voice_input)
             response = None
             if group_name in VALID_GROUPS and VALID_GROUPS[group_name] == password:
-                if command == "play" and data.get("song_name"):
+                if command == "play" or command == "add" and data.get("song_name"):
                     response = get_song_uri(sp, data.get("song_name"), data.get("artist_name"))
                     add_song_to_db(sp, song_uri=response.get("track_uri"), song_name=response.get("song_name"),
-                                   group_name=group_name)
-                    play_song(sp, response['track_uri'])
-                    return f"Playing song: {data.get('song_name')}"
-                elif command == "add" and data.get("song_name"):
-                    response = get_song_uri(sp, data.get("song_name"), data.get("artist_name"))
-                    add_song_to_db(sp, song_uri=response.get("track_uri"), song_name=response.get("song_name"),
-                                   group_name=group_name)
+                                   group_name=group_name, user_name=username, status="requested")
                     add_song_to_queue(sp, response['track_uri'])
-                    return f"Song: {response.get('song_name')} added to the queue"
+                    return f"Song: {response.get('song_name')} added to the requests queue"
                 elif command == "pause":
                     pause(sp)
                     return "Paused playback"
@@ -197,10 +191,10 @@ def like_dislike_user(vote):
                 group_name = data[0][0]
                 user = data[0][0]
                 update_user_popularity(group_name, user_name, vote)
-            else:
+            except:
                 raise Exception("Could not find user for like/dislike")
 
-def add_song_to_db(sp, song_uri, song_name, group_name):
+def add_song_to_db(sp, song_uri, song_name, group_name, user_name, status):
     create_db()
     create_users_db()
     if len(get_queue()) == 0:
@@ -212,8 +206,8 @@ def add_song_to_db(sp, song_uri, song_name, group_name):
         raise Exception("Could not get audio analysis")
     try:
         with sqlite3.connect(ht_db) as c:
-            c.execute("""INSERT into song_queue VALUES (?,?,?,?,?,?,?,?,?)""",
-                      (now, group_name, song_name, song_uri, tempo, energy,
+            c.execute("""INSERT into song_queue VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                      (now, group_name, user_name, status, song_name, song_uri, tempo, energy,
                        time_signature, danceability,
                        json.dumps(segments)))
     except:
