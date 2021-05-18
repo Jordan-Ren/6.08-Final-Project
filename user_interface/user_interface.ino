@@ -222,9 +222,10 @@ void loop() {
       break;
     case RECORDED:
       if (digitalRead(PIN_2) == 0) {
-        tft.fillScreen(TFT_BLACK);
-        tft.setCursor(0,0);
-        tft.println("Sending Request...");
+//        tft.fillScreen(TFT_BLACK);
+//        tft.setCursor(0,0);
+//        tft.println("Sending Request...");
+        Serial.println("Sending Request...");
         send_request(recorded_transcript);
         state = IDLE;
       }
@@ -442,7 +443,7 @@ void lightshow(JsonArray genres, double bpm) {
 
 
 void send_request(char * trans) {
-  tft.fillScreen(TFT_BLACK);
+//  tft.fillScreen(TFT_BLACK);
   char body[100]; //I need to be changed.
   sprintf(request_buffer, "POST http://608dev-2.net/sandbox/sc/team15/final/voice_text_input_with_secrets.py HTTP/1.1\r\n");
   sprintf(request_buffer + strlen(request_buffer), "Host: %s\r\n", host);
@@ -453,8 +454,8 @@ void send_request(char * trans) {
   do_http_request(host, request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
   Serial.println("RESPONSE:::::");
   Serial.println(response_buffer);
-  tft.setCursor(0,0);
-  tft.println(response_buffer);
+//  tft.setCursor(0,0);
+//  tft.println(response_buffer);
 }
 
 //function used to record audio at sample rate for a fixed nmber of samples
@@ -562,6 +563,7 @@ void audio_control() {
       while (client.available()) {
         char_append(response, client.read(), OUT_BUFFER_SIZE);
       }
+      Serial.print("Resonse: ");
       Serial.println(response);
       char* trans_id = strstr(response, "transcript");
       tft.setCursor(0,0);
@@ -574,11 +576,12 @@ void audio_control() {
         strncat(transcript, starto, transcript_len);
         for(int i = 0; i < sizeof(transcript); i++)
           transcript[i] = tolower(transcript[i]);
+        Serial.print("Transcript: ");
         Serial.println(transcript);
         state = RECORDED;
-        tft.fillScreen(TFT_BLACK);
-        tft.println("Current Action:");
-        tft.println(transcript);
+//        tft.fillScreen(TFT_BLACK);
+//        tft.println("Current Action:");
+//        tft.println(transcript);
         sprintf(recorded_transcript, transcript);
       } else {
         tft.fillScreen(TFT_BLACK);

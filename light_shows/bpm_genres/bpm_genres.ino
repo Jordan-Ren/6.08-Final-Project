@@ -1,6 +1,5 @@
 #include <FastLED.h>
 #include <stdlib.h>
-#include <TFT_eSPI.h>
 #include <WiFi.h> //Connect to WiFi Network
 #include <SPI.h>
 #include <mpu6050_esp32.h>
@@ -9,7 +8,6 @@
 
  
 CRGB leds[150];
-TFT_eSPI tft = TFT_eSPI();
 
 int r = 70;
 int b = 0;
@@ -68,12 +66,6 @@ void setup()
   }
   
   FastLED.addLeds<WS2812, 25, GRB>(leds, 150);
-  tft.init();  //init screen
-  tft.setRotation(2); //adjust rotation
-  tft.setTextSize(1); //default font size
-  tft.fillScreen(TFT_BLACK); //fill background
-  tft.setTextColor(TFT_GREEN, TFT_BLACK); //set color of font to green foreground, black background
-  tft.setTextSize(3);
 
   lookup(response);
   loop_timer = millis();
@@ -215,11 +207,10 @@ bool bidirectional = true;
 double grad = 0.1;
 int maxi = 150;
 void lightshow(JsonArray genres, double bpm) {
-  tft.fillScreen(TFT_BLACK); //fill background
-  tft.setCursor(20, 20, 1);
-  tft.setTextColor(TFT_BLUE, TFT_BLACK);
-
-  double time_pass = min(60.0*1000.0/bpm, 5000);
+  double time_pass = 5000;
+  if (bpm != 0) {
+     time_pass = 60.0*1000.0/bpm;
+  }
   int start_timer = millis();
   
   for(int weep = 0; weep < maxi; weep++)
