@@ -214,7 +214,7 @@ def add_song_to_db(sp, song_uri, song_name, group_name, user_name, status):
         raise Exception("Could not get audio analysis")
     try:
         with sqlite3.connect(ht_db) as c:
-            c.execute("""INSERT into song_queue VALUES (?,?,?,?,?,?,?,?,?,?)""",
+            c.execute("""INSERT into song_queue VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
                       (now, group_name, user_name, status, song_name, song_uri, tempo, energy,
                        time_signature, danceability,
                        json.dumps(segments)))
