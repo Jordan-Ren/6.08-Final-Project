@@ -14,13 +14,108 @@ h1 {
     text-align: center;
 }
 
+h3 {
+    font-family: "Montserrat";
+    font-size: 30pt;
+    font-weight: 900;
+    line-height: 1.5;
+  }
+
 #navlogo { 
-    height: 100px;
-    width: 100px;
+    width: 80%;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 #cont {
     width:100%;
     margin-top: 50px;
 }
+
+li {
+    color: #FFFFFF;
+    font-family: "Montserrat";
+    font-size: 16pt;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+.sidenav {
+    height: 100%;
+    width: 30%;
+    position: fixed;
+    z-index: 1;
+    top: 0;
+    left: 0;
+    background-color: #111;
+    overflow-x: hidden;
+    padding-top: 20px;
+  }
+  
+  .sidenav a {
+    padding: 6px 8px 6px 16px;
+    text-decoration: none;
+    font-size: 25px;
+    color: #818181;
+    display: block;
+  }
+  
+  .sidenav h2 {
+    color: #FFFFFF;
+    font-family: "Montserrat";
+    font-size: 30pt;
+    font-weight: 900;
+    line-height: 1.75;
+    width: 80%;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .sidenav h3 {
+    color: #FFFFFF;
+    font-family: "Montserrat";
+    font-size: 16pt;
+    font-weight: 900;
+    line-height: 1.5;
+    width: 80%;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .sidenav hr {
+    color: #FFFFFF;
+    width: 80%;
+  }
+  
+  .sidenav p {
+    color: #FFFFFF;
+    font-family: "Montserrat";
+    font-size: 16pt;
+    font-weight: 500;
+    line-height: 1;
+    width: 80%;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .sidenav a:hover {
+    color: #f1f1f1;
+  }
+  
+  .main {
+    margin-left: 35%; /* Same as the width of the sidenav */
+    margin-top: 12%; 
+    font-size: 28px; /* Increased text to enable scrolling */
+    padding: 0px 10px;
+  }
+  
+  @media screen and (max-height: 450px) {
+    .sidenav {padding-top: 15px;}
+    .sidenav a {font-size: 18px;}
+  }
+
 

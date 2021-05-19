@@ -5,38 +5,18 @@
 		<link rel="stylesheet" href="web_assets/main.css" />
 </head>
 <body style="background-color: #191414;">
-  <table style="width:100%; margin-top: 2%;">
-    <tr>
-      <th>
-        <img src="web_assets/spotify-icons-logos/spotify_white_simple.png" id="navlogo" />
-      </th>
-      <th>
-        <h1>Spartify Web Playback</h1>
-      </th> 
-    </tr>
-  </table>
-  <table style="width:95%; margin-top: 2%; margin-left: 5%;">
-    <tr align="left">
-      <th>
-        <h2 style="color: #1DB954;">Group ID</h2>
-        <p id="groupID"></p>
-      </th>
-      <th>
-        <h3 style="color: #1DB954;">Upcoming Songs on This Device</h3>
-        <ol>
-          <li id="nextSong">No next song queued</li>
-          <li id="nextnextSong">No next next song queued</li>
-        </ol>
-        <p id="queue"></p>
-      </th> 
-    </tr>
-    <tr align="left">
-      <th>
-        <h2 style="color: #1DB954;">Spartify Queue</h2>
-        <h3>Currently Playing Song on This Device</h3>
-        <p id="currentSong">No currently playing song</p>
-      </th>
-      <th>
+
+<div class="sidenav">
+  <img src="images/6.08_spartify_logo.png" id="navlogo" />
+  <hr>
+  <h2 style="color: #1DB954;">Group ID</h2>
+  <p id="groupID"></p>
+  <h2 style="color: #1DB954;">Spartify Queue</h2>
+  <h3>Currently Playing Song on This Device</h3>
+  <p id="currentSong">No currently playing song</p>
+</div>
+
+<div class="main">
         <!-- <form action="">
         <select name="customers" onchange="getQueue(this.value)">
           <option value="">Select a customer:</option>
@@ -49,20 +29,26 @@
         <br> -->
         <h3 style="color: #1DB954;">Group Request Queue</h3>
         <ol>
-          <li id="req0">First song in request queue will be listed here...</li>
+          <li id="req0" style="color: #1DB954;">First song in request queue will be listed here...</li>
           <li id="req1">Second song in request queue will be listed here...</li>
           <li id="req2">Third song in request queue will be listed here...</li>
         </ol>
-      </th> 
-    </tr>
-  </table>
+        <br>
+        <h3 style="color: #1DB954;">Upcoming Songs on This Device</h3>
+        <ol>
+          <li id="nextSong">No next song queued</li>
+          <li id="nextnextSong">No next next song queued</li>
+        </ol>
+        <p id="queue"></p>
+</div>
+
   
   <script src="https://sdk.scdn.co/spotify-player.js"></script>
 
   
 
   <!-- <script type="text/javascript" src="jquery-1.8.1.min.js"></script> -->
- 
+
   <script>
     var groupID = "defaultGroupID";
     window.onSpotifyWebPlaybackSDKReady = () => {
