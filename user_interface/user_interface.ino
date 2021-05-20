@@ -43,7 +43,7 @@ const int SAMPLE_DURATION = 5;                        // duration of fixed sampl
 const int NUM_SAMPLES = SAMPLE_FREQ * SAMPLE_DURATION;  // number of of samples
 const int ENC_LEN = (NUM_SAMPLES + 2 - ((NUM_SAMPLES + 2) % 3)) / 3 * 4;  // Encoded length of clip
 const int LED = 25; // Change this as necessary
-const int NUM_LEDS = 150; // Change this for the length of your LED strip
+const int NUM_LEDS = 70; // Change this for the length of your LED strip
 CRGB leds[NUM_LEDS];
 
 char group[] = "test1";
@@ -76,18 +76,19 @@ const int IDLE = 0;
 const int RECORDED = 1;
 int state;
 
-int r = 70;
-int b = 0;
-int g = 0;
+volatile int r = 70;
+volatile int b = 0;
+volatile int g = 0;
+volatile int pattern = 1;
 
 bool bidirectional = true;
 double grad = 0.1;
-int maxi = 150;
+volatile int maxi = 70;
 
 JsonArray genres;
-double bpm = 100.0;
-double old_bpm = 100.0;
-int loop_timer;
+volatile double bpm = 100.0;
+volatile double old_bpm = 100.0;
+volatile int loop_timer;
 const uint16_t OUT_BUFFER_SIZE_LIGHTS = 3000; //size of buffer to hold HTTP response
 char old_response_lights[OUT_BUFFER_SIZE_LIGHTS]; //char array buffer to hold HTTP request
 char response_lights[OUT_BUFFER_SIZE]; //char array buffer to hold HTTP request
@@ -113,7 +114,8 @@ TaskHandle_t Task1;
 TaskHandle_t Task2;
 
 void setup() {
-  Serial.begin(115200);               // Set up serial port
+  Serial.begin(115200); // Set up serial port
+  delay(100);
   tft.init();  //init screen
   tft.setRotation(2); //adjust rotation
   tft.setTextSize(1); //default font size
@@ -123,7 +125,6 @@ void setup() {
   pinMode(PIN_1, INPUT_PULLUP);
   pinMode(PIN_2, INPUT_PULLUP);
   pinMode(25,OUTPUT); digitalWrite(25,0);//in case you're controlling your screen with pin 25
-
   WiFi.begin(NETWORK, PASSWORD); //attempt to connect to wifi
   uint8_t count = 0; //count used for Wifi check times
   Serial.print("Attempting to connect to ");
@@ -152,12 +153,12 @@ void setup() {
   tft.setCursor(0,0);
   tft.println("Hold button to record");
   FastLED.addLeds<WS2812, LED, GRB>(leds, NUM_LEDS);
-  lookup(response);
+  update_genre_bpm(response);
   loop_timer = millis();
 
   //CORE TESTING
   xTaskCreatePinnedToCore(
-      pulse_to_bpm, /* Function to implement the task */
+      light_handler, /* Function to implement the task */
       "Task1", /* Name of the task */
       50000,  /* Stack size in words */
       NULL,  /* Task input parameter */
@@ -166,14 +167,37 @@ void setup() {
       0); /* Core where the task should run */
 }
 
+void test_api(char* response) {
+  char request_buffer[200];
+  //CHANGE WHERE THIS IS TARGETED! IT SHOULD TARGET YOUR SERVER SCRIPT
+  sprintf(request_buffer, "GET https://jsonplaceholder.typicode.com/todos/1 HTTP/1.1\r\n");
+  strcat(request_buffer, "Host: jsonplaceholder.typicode.com\r\n");
+  strcat(request_buffer, "\r\n"); //new line from header to body
+  int response_size = 200;
 
-void lookup(char* response) {
+  do_http_request("jsonplaceholder.typicode.com", request_buffer, response, response_size, RESPONSE_TIMEOUT, true);
+
+  char* begin_json=strchr(response,'{');
+  char* end_json=strrchr(response,'}');
+
+  end_json[1] = '\0';
+
+  StaticJsonDocument<300> doc;
+  
+  // Deserialize the JSON document
+  DeserializationError error = deserializeJson(doc, begin_json);
+
+  int id_test = doc["id"];
+  Serial.println(id_test);
+}
+
+void update_genre_bpm(char* response) {
   char request_buffer[200];
   //CHANGE WHERE THIS IS TARGETED! IT SHOULD TARGET YOUR SERVER SCRIPT
   sprintf(request_buffer, "GET http://608dev-2.net/sandbox/sc/team15/final/voice_text_input_with_secrets.py?group=%s HTTP/1.1\r\n", group);
   strcat(request_buffer, "Host: 608dev-2.net\r\n");
   strcat(request_buffer, "\r\n"); //new line from header to body
-  int response_size = 200;
+  int response_size = 400;
 
   do_http_request("608dev-2.net", request_buffer, response, response_size, RESPONSE_TIMEOUT, true);
 
@@ -216,107 +240,38 @@ void lookup(char* response) {
 
 //main body of code
 void loop() {
-  switch (state) {
-    case IDLE:
-      audio_control();
-      break;
-    case RECORDED:
-      if (digitalRead(PIN_2) == 0) {
-//        tft.fillScreen(TFT_BLACK);
-//        tft.setCursor(0,0);
-//        tft.println("Sending Request...");
-        Serial.println("Sending Request...");
-        send_request(recorded_transcript);
-        state = IDLE;
-      }
-      if (digitalRead(PIN_1) == 0) {
-        state = IDLE;
-        tft.fillScreen(TFT_BLACK);
-        tft.setCursor(0,0);
-        tft.println("Hold button to record");
-      }
-      break;
-  }
-//  led_control();
-  //pulse_to_bpm(100, 0, 0, 125);
-}
-
-void pulse_to_bpm(void * pvParameters) {
-  while(1) {
-    if (millis() - loop_timer > 10000) {
-      lookup(response);
-      if (old_bpm != bpm) {
-        for(int y = 0; y < 150; y++)
-        {
-          leds[y] = CRGB(rand() % 40, rand() % 10, rand() % 10); // 0,0,0
-        }
-        FastLED.show();
-        maxi = (int) 150 * (bpm / 300);
-      } else {
-        for(int y = maxi; y < 150; y++)
-        {
-          double rrr = ((double) rand() / (RAND_MAX));
-          if (rrr > 0.8)
-          {
-            leds[y] = CRGB(r + rand() % 10, g + rand() % 5, b + rand() % 5); // 0,0,0
-          }
-          else
-          {
-            leds[y] = CRGB(0, 0, 0);
-          }
-        }
-        FastLED.show();
-      }
-    //  Serial.println(response);
+  if (millis() - loop_timer > 10000) {
+      update_genre_bpm(response);
       loop_timer = millis();
+  }
+  if (digitalRead(PIN_2) == 0) {
+    tft.fillScreen(TFT_BLACK);
+    tft.setCursor(0,0);
+    tft.println("Sending Request...");
+    send_request(recorded_transcript);
+  }
+  audio_control();
+}
+
+
+void light_handler(void * pvParameters) {
+  while(1) {
+    double time_pass = 5000;
+    int start_timer = millis();
+    if (bpm != 0) {
+       time_pass = 60.0*1000.0/bpm;
     }
-  
-    Serial.println("heyo");
-    Serial.println(xPortGetCoreID());
-    
-    lightshow(genres, bpm);
-    
+    switch(pattern) {
+      case 1: piano(); break;
+      case 2: fill_left(); break;
+      case 3: fade_effects(); break;
+      case 4: rainbow(); break;
+      case 5: pong(); break;
+      case 6: twinkle(); break;
+    }
+    while ((millis() - start_timer) < time_pass) {}
   }
 }
-
-
-void scroll_left(uint8_t r, uint8_t g, uint8_t b) {
-  for (int i=0; i < NUM_LEDS;i++) {
-    leds[i] = CRGB(r, g, b);
-    FastLED.show();
-  }
-}
-
-void scroll_right(uint8_t r, uint8_t g, uint8_t b) {
-  for (int i=NUM_LEDS; i > 0;i--) {
-    leds[i] = CRGB(r, g, b);
-    FastLED.show();
-  }
-}
-
-void set_all(uint8_t r, uint8_t g, uint8_t b) {
-  for (int i=0; i<NUM_LEDS;i++) {
-    leds[i] = CRGB(r, g, b);
-  }
-  FastLED.show();
-}
-
-void fade_out(uint8_t r, uint8_t g, uint8_t b) {
-  uint32_t start = micros();
-  float red;
-  float green;
-  float blue;
-  for (int i=255; i>0; i=i-8) {
-    red = (i/256.0)*r;
-    green = (i/256.0)*g;
-    blue = (i/256.0)*b;
-    set_all(int(red), int(green), int(blue));
-  }
-  set_all(0, 0, 0);
-  uint32_t end_ = micros();
-  //Serial.println(end_ - start);
-}
-
 
 
 void genre_setter(JsonArray genres) {
@@ -344,54 +299,63 @@ void genre_setter(JsonArray genres) {
         r = 0;
         g = 70;
         b = 0;
+        pattern = 1;
         Serial.println(text);
         break;
       } else if (pop!=NULL) {
         r = 70;
         g = 0;
         b = 0;
+        pattern = 2;
         Serial.println(text);
         break;
       } else if (low!=NULL) {
         r = 0;
         g = 10;
         b = 60;
+        pattern = 3;
         Serial.println(text);
         break;
       } else if (indie!=NULL) {
         r = 0;
         g = 0;
         b = 10;
+        pattern = 4;
         Serial.println(text);
         break;
       } else if (folk!=NULL) {
         r = 10;
         g = 50;
         b = 0;
+        pattern = 5;
         Serial.println(text);
         break;
       } else if (latin!=NULL) {
         r = 50;
         g = 30;
         b = 0;
+        pattern = 6;
         Serial.println(text);
         break;
       } else if (metal!=NULL) {
         r = 5;
         g = 5;
         b = 5;
+        pattern = 2;
         Serial.println(text);
         break;
       } else if (jazz!=NULL) {
         r = 50;
         g = 0;
         b = 30;
+        pattern = 3;
         Serial.println(text);
         break;
       } else if (rap!=NULL) {
         r = 50;
         g = 50;
         b = 10;
+        pattern = 5;
         Serial.println(text);
         break;
       } else {
@@ -403,47 +367,8 @@ void genre_setter(JsonArray genres) {
   }
 }
 
-void lightshow(JsonArray genres, double bpm) {
-
-  double time_pass = 5000;
-  if (bpm != 0) {
-     time_pass = 60.0*1000.0/bpm;
-  }
-  
-  int start_timer = millis();
-  
-  for(int weep = 0; weep < maxi; weep++)
-  {
-    int one = weep/1;
-    for(int i = 0; i < one; i++)
-    {
-      leds[i] = CRGB(int(r+(grad*i)), int(g+(grad*i)), int(b+(grad*i)));
-      if (bidirectional) {
-        leds[150 - i] = CRGB(int(r+(grad*i)), int(g+(grad*i)), int(b+(grad*i)));
-      }
-    }
-    for(int ii = one; ii < maxi; ii++)
-    {
-      leds[ii] = CRGB(0, 0, 0);
-      if (bidirectional) {
-        leds[150 - ii] = CRGB(0, 0, 0);
-      }
-    }
-    FastLED.show();
-  }
-
-
-  // !!!!!!!!!!!!!!!!!
-  while ((millis() - start_timer) < time_pass) {
-    FastLED.show();
-  }
-
-  
-}
-
 
 void send_request(char * trans) {
-//  tft.fillScreen(TFT_BLACK);
   char body[100]; //I need to be changed.
   sprintf(request_buffer, "POST http://608dev-2.net/sandbox/sc/team15/final/voice_text_input_with_secrets.py HTTP/1.1\r\n");
   sprintf(request_buffer + strlen(request_buffer), "Host: %s\r\n", host);
@@ -452,13 +377,11 @@ void send_request(char * trans) {
   sprintf(request_buffer + strlen(request_buffer), "Content-Length: %d\r\n\r\n", strlen(body));
   strcat(request_buffer, body);
   do_http_request(host, request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
-  Serial.println("RESPONSE:::::");
   Serial.println(response_buffer);
-//  tft.setCursor(0,0);
-//  tft.println(response_buffer);
+  tft.setCursor(0,0);
+  tft.println(response_buffer);
 }
 
-//function used to record audio at sample rate for a fixed nmber of samples
 void record_audio() {
   int sample_num = 0;    // counter for samples
   int enc_index = strlen(PREFIX) - 1;  // index counter for encoded samples
@@ -526,7 +449,7 @@ void audio_control() {
       int ind = 0;
       int jump_size = 1000;
       char temp_holder[jump_size + 10] = {0};
-      Serial.println("sending data");
+      Serial.println("Sending data\n");
       while (ind < len) {
         delay(80);//experiment with this number!
         //if (ind + jump_size < len) client.print(speech_data.substring(ind, ind + jump_size));
@@ -579,9 +502,9 @@ void audio_control() {
         Serial.print("Transcript: ");
         Serial.println(transcript);
         state = RECORDED;
-//        tft.fillScreen(TFT_BLACK);
-//        tft.println("Current Action:");
-//        tft.println(transcript);
+        tft.fillScreen(TFT_BLACK);
+        tft.println("Current Action:");
+        tft.println(transcript);
         sprintf(recorded_transcript, transcript);
       } else {
         tft.fillScreen(TFT_BLACK);
@@ -594,4 +517,112 @@ void audio_control() {
     }
   }
   old_button_state = button_state;
+}
+
+void rainbow() {
+  for(int y = 0; y < 50; y++)
+    {
+      leds[y] = CRGB(rand() % 150, rand() % 150, rand() % 150); // 0,0,0
+    }
+    delay(500);
+    FastLED.show();
+}
+
+void piano() {
+  int one = rand() % (50 - 5);
+  int two = rand() % (50 - 5);
+  int three = rand() & (50 - 5);
+  for (int k = 0; k < 50; k++) {
+    leds[k] = CRGB(0, 0, 0);
+  }
+  for (int i = one; i < one+5; i++) {
+    leds[i] = CRGB(r, g, b);
+  }
+  for (int j = two; j < two+5; j++) {
+    leds[j] = CRGB(r, g, b);
+  }
+  for (int l = three; l < three+5; l++) {
+    leds[l] = CRGB(r, g, b);
+  }
+  FastLED.show();
+}
+
+void fill_left() {
+  for (int i = 0;i < 50; i=i+5) {
+    for (int j = 0;j < i; j++) {
+      leds[j] = CRGB(int(r+(grad*i)), int(g+(grad*i)), int(b+(grad*i)));
+    }
+    for (int k = i;k < 50; k++) {
+      leds[k] = CRGB(0, 0, 0);
+    }
+    FastLED.show();
+    delay(25);
+  }
+}
+
+void set_all(uint8_t r, uint8_t g, uint8_t b) {
+  for (int i=0; i<NUM_LEDS;i++) {
+    leds[i] = CRGB(r, g, b);
+  }
+  FastLED.show();
+}
+
+void fade_effects() {
+  int color = rand() % 5;
+  for(int k = 0; k < 256; k++) {
+    switch(color) {
+      case 0: set_all(k,0,0); break;
+      case 1: set_all(0,k,0); break;
+      case 2: set_all(0,0,k); break;
+      case 3: set_all(k,k,0); break;
+      case 4: set_all(k,0,k); break;
+      case 5: set_all(0,k,k); break;
+    }
+    delay(3);
+  }
+  for(int k = 255; k >= 0; k--) {
+    switch(color) {
+      case 0: set_all(k,0,0); break;
+      case 1: set_all(0,k,0); break;
+      case 2: set_all(0,0,k); break;
+      case 3: set_all(k,k,0); break;
+      case 4: set_all(k,0,k); break;
+      case 5: set_all(0,k,k); break;
+    }
+    delay(3);
+  }
+}
+
+void pong() {
+  for (int i = 0;i < NUM_LEDS-5-2; i++) {
+    set_all(0, 0, 0);
+    leds[i] = CRGB(r/10, g/10, b/10);
+    for (int j = 1; j< 5;j++) {
+      leds[i+j] = CRGB(r, g, b);
+    }
+    leds[i+5+1] = CRGB(r/10, g/10, b/10);
+    delay(5);
+    FastLED.show();
+  }
+  delay(50);
+  for (int i = NUM_LEDS-5-2;i > 0 ; i--) {
+    set_all(0, 0, 0);
+    leds[i] = CRGB(r/10, g/10, b/10);
+    for (int j = 1; j< 5;j++) {
+      leds[i+j] = CRGB(r, g, b);
+    }
+    leds[i+5+1] = CRGB(r/10, g/10, b/10);
+    delay(5);
+    FastLED.show();
+  }
+}
+
+void twinkle() {
+  set_all(0, 0, 0);
+  for (int i = 0; i<15; i++) {
+    int l = rand() % NUM_LEDS;
+    leds[i] = CRGB(r, g, b);
+    FastLED.show();
+    delay(50);
+  }
 }
