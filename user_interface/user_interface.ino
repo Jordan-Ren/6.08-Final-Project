@@ -619,10 +619,10 @@ void pong() {
 
 void twinkle() {
   set_all(0, 0, 0);
-  for (int i = 0; i<15; i++) {
+  for (int i = 0; i<30; i++) {
     int l = rand() % NUM_LEDS;
-    leds[i] = CRGB(r, g, b);
+    leds[l] = CRGB(r, g, b);
     FastLED.show();
-    delay(50);
+    delay(25);
   }
 }
