@@ -520,7 +520,7 @@ void audio_control() {
 }
 
 void rainbow() {
-  for(int y = 0; y < 50; y++)
+  for(int y = 0; y < NUM_LEDS; y++)
     {
       leds[y] = CRGB(rand() % 150, rand() % 150, rand() % 150); // 0,0,0
     }
@@ -529,34 +529,34 @@ void rainbow() {
 }
 
 void piano() {
-  int one = rand() % (50 - 5);
-  int two = rand() % (50 - 5);
-  int three = rand() & (50 - 5);
-  for (int k = 0; k < 50; k++) {
+  int one = rand() % (NUM_LEDS - 10);
+  int two = rand() % (NUM_LEDS - 10);
+  int three = rand() & (NUM_LEDS - 10);
+  for (int k = 0; k < NUM_LEDS; k++) {
     leds[k] = CRGB(0, 0, 0);
   }
-  for (int i = one; i < one+5; i++) {
+  for (int i = one; i < one+10; i++) {
     leds[i] = CRGB(r, g, b);
   }
-  for (int j = two; j < two+5; j++) {
+  for (int j = two; j < two+10; j++) {
     leds[j] = CRGB(r, g, b);
   }
-  for (int l = three; l < three+5; l++) {
+  for (int l = three; l < three+10; l++) {
     leds[l] = CRGB(r, g, b);
   }
   FastLED.show();
 }
 
 void fill_left() {
-  for (int i = 0;i < 50; i=i+5) {
+  for (int i = 0;i < NUM_LEDS; i=i+10) {
     for (int j = 0;j < i; j++) {
       leds[j] = CRGB(int(r+(grad*i)), int(g+(grad*i)), int(b+(grad*i)));
     }
-    for (int k = i;k < 50; k++) {
+    for (int k = i;k < NUM_LEDS; k++) {
       leds[k] = CRGB(0, 0, 0);
     }
     FastLED.show();
-    delay(25);
+    delay(NUM_LEDS);
   }
 }
 
@@ -594,24 +594,24 @@ void fade_effects() {
 }
 
 void pong() {
-  for (int i = 0;i < NUM_LEDS-5-2; i++) {
+  for (int i = 0;i < NUM_LEDS-10-2; i++) {
     set_all(0, 0, 0);
     leds[i] = CRGB(r/10, g/10, b/10);
-    for (int j = 1; j< 5;j++) {
+    for (int j = 1; j< 10;j++) {
       leds[i+j] = CRGB(r, g, b);
     }
-    leds[i+5+1] = CRGB(r/10, g/10, b/10);
-    delay(5);
+    leds[i+10+1] = CRGB(r/10, g/10, b/10);
+    delay(10);
     FastLED.show();
   }
   delay(50);
-  for (int i = NUM_LEDS-5-2;i > 0 ; i--) {
+  for (int i = NUM_LEDS-10-2;i > 0 ; i--) {
     set_all(0, 0, 0);
     leds[i] = CRGB(r/10, g/10, b/10);
-    for (int j = 1; j< 5;j++) {
+    for (int j = 1; j< 10;j++) {
       leds[i+j] = CRGB(r, g, b);
     }
-    leds[i+5+1] = CRGB(r/10, g/10, b/10);
+    leds[i+10+1] = CRGB(r/10, g/10, b/10);
     delay(5);
     FastLED.show();
   }
