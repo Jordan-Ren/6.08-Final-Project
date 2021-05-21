@@ -1,0 +1,50 @@
+<meta charset="utf-8" emacsmode="-*- markdown -*-"><link rel="stylesheet" href="https://casual-effects.com/markdeep/latest/apidoc.css?">
+
+                          **6.08 Team 15: Spartify**
+
+
+# Introduction
+
+During a pandemic, staying safe while enjoying group entertainment is a difficult challenge. However, our SPARTIFY (Spotify+Party) system allows for group-listening to your favorite country, indie rock, whatever-genre-you-want songs! Our project focuses on creating a group Spotify party hosting platform where each user is allowed to add songs to a shared song queue which will be played out of an IOT-connected speaker. Furthermore, what party is complete without sick lights? None. The answer is none. Therefore to complete the party, we connect an ESP32 with an addressable LED strip and tailor custom light shows to the currently playing songs based on characteristics provided by the Spotify Web API.
+
+Some other important features we have integrated are speech to text capabilities using the Google speech to text API so that people with the inability to type efficiently and search for songs (like our beloved team member Alex) can still partake in the fun. We also want to make sure no party-poopers can hop on and ruin the ~vibe~ of our party and multiple groups of people can use the system so we implemented a group and popularity system to ensure only people within our specified group with good taste in music can change the music and influence the direction of the party.
+
+Users request and control songs by speaking commands into the microphone, and we discuss supported commands later in this document. The user is then presented with the command, and can choose whether or not to send the command to the server. Otherwise, the user will have to enter in a new request.
+
+The web server has a basic interface which displays the current song being played as well as the next 3 songs on the queue. Furthermore, the web page plays the current song through the speakers on the device that has access to the Spotify page. We use the Spotify Web Playback SDK, which allows users to create a new Spotify player in Spotify Connect. This allows the audio from a Spotify account to be streamed to a browser.
+
+Every ten seconds the ESP32 sends a GET request to the server in order to determine the current song being played. Based on the song being played, the LED strip generates and displays a unique light show reflecting the mood/genre of the song.
+
+All functionality on the dual-core ESP32 can run concurrently through our multi core functionality, with the microphone system on one core and the light shows on the other.
+
+
+
+
+# Video Demo
+
+![Final Video Demo](https://www.youtube.com/watch?v=8ABML3wtwU4)
+
+
+# Parts
+## 6.08 Kit Parts
+- ESP32
+- Buttons
+- TFT
+- Microphone
+
+## Purchased Parts
+- Light Strips
+- Power Banks
+
+
+
+
+
+
+
+
+<style class="fallback">body{visibility:hidden}</style><script>markdeepOptions={tocStyle:'medium'};</script>
+<!-- Markdeep: --><script src="https://casual-effects.com/markdeep/latest/markdeep.min.js?" charset="utf-8"></script>
+
+
+
