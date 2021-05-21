@@ -1,0 +1,133 @@
+
+     <meta charset="utf-8" emacsmode="-*- markdown -*-"><link rel="stylesheet" href="https://casual-effects.com/markdeep/latest/slate.css?">
+
+
+     **6.08 Final Project Week 4 Deliverables/Demos Update: Team 15**
+
+Group A: Tue 3-3:30P
+
+David He (dhe127), Sohini Kar (skar), Alex Ellison (acelli), Brandon Yue (byue), Jordan Ren (jordanr1)
+
+Here are updates for our Week 4 Deliverables and Demos
+
+# ESP32 - Lights
+## ESP32 - Lights: Add genre support
+
+**Videos:**
+
+![ESP32 Lights](https://youtu.be/UPKYD5oOLWI)
+
+
+**Deliverable:** 
+
+Support more genres from Spotify. Compile possible genres and create function to delineate and operate light shows.
+
+**Process:**
+We now have specific light shows programmed for pop, rock, lo-fi, indie, folk, latin, metal, jazz and rap. Should we encounter a genre our system does not recognize, the ESP32 generates light show colors based on the genre string (so that the lights are consistently generated for the 1000s of possible genres, but has a semi-random and unique color for each one seen).
+
+The frequency at which the lights flash is still based on the beats-per-minute, but we only light up about half of the LED strip so that our light show can stay on beat as with longer LED strips the amount of time to fill an LED strip would be longer than the beat, which caused the LED strip to de-sync. Our main function to delineate light shows is genre_setter() which is used to set the LED colors, while the function used to operate light shows is lightshow() which actually controls the color and frequency at which we flash LEDs on our LED strip. Finally, we were able to implement multi-core on our ESP32s so that light control didn’t clash with blocking voice input code.
+
+
+
+# ESP32 - Voice Selection
+## ESP32 - Voice Selection: Integrate and add like/dislike capabilities
+
+**Video:**
+
+![ESP32 - Voice Selection](https://youtu.be/psmEQ_Y2WxI)
+
+**Deliverable:** 
+Ensure error handling is appropriate. Integrate with the rest of the system. Add like-dislike audio input parsing for current song
+
+**Process:**
+This week we interfaced with the API side again to ensure that we return the correct stuff and that the error handling they worked on is appropriate for what we want to happen. This was very similar to what was built in previous weeks, but we wanted to ensure that any changes to our error handling did not break anything with the voice selection. A summary of what is supposed to happen is as follows:
+If an invalid group name or password is sent to the server from the ESP32 an indication that this occurred is outputted to the user
+If there is no command passed to the server, indication that the user needs to try again is outputted to the user
+Finally, if any errors occur with adding songs to the database, connecting to spotify, or anything the user does not have control over we raise exceptions to give info on what part of our code is causing the issues so we as the developers know what to troubleshoot.
+The second part of this week's work was adding like and dislike input parsing for the current song. This consisted of updating our parse_voice_input function to handle likes and dislike commands. This was a nice extension of previous weeks work and we made sure to add in “like” and “dislike” as common phrases. More on the mechanics of the actual liking and disliking can be found in the Requests/Database Queue section.
+
+
+
+
+# ESP32/Server - Playing songs
+## ESP32/Server: Improve UX and aesthetics.
+
+**Video:**
+
+![ESP32/Server Demo](https://youtu.be/_tHH3ftc5fE)
+
+**Deliverable:**
+
+Improve aesthetics of the SDK page, confirm that it is integrated with the full system.
+
+**Process:**
+
+To improve the general aesthetics, we pulled from the Spotify style guide for color and font inspiration. Specifically, we emphasized the Spotify branding by using the same logo and general aesthetics. We created a header consisting of the logo on the top left and our project title in the top center.
+
+We then took all of our content and put it into tables. Our four main sections are: Group ID, Spartify Queue, Upcoming Songs on this Device, and Group Request Queue. We laid them out in a 4-quadrant style, with the main unchanging information of the Group ID and Spartify Queue on the left and the other queues on the right. The queue is integrated to the full system and updates based on the songs playing.
+
+
+
+# Server - Spotify API
+## Server - Spotify API: Integrate
+
+**Video:**
+	
+![Spotify API Demo](https://youtu.be/R2EbJosHvk8)
+
+**Deliverable:** 
+
+Integrate Spotify API fully, make sure the endpoints are being corrected correctly and there is error handling at all stages.
+
+**Process:**
+This week we added some exceptions to better indicate any errors we run into in order to more quickly diagnose problems. We decided to raise exceptions for things such as being unable to add songs or people to the database, being unable to get song uri info necessary to play songs, being unable to get audio analysis for songs, etc. We also thought about things that were not necessarily errors that should throw exceptions, but things in which we want to give some sort of output to the user or in the Serial monitor of the device to give more information on what is going on. An example of this is if our queue is empty, instead of erroring out, we would like to just indicate that the queue has no songs in it. Finally, we changed some endpoints in the API to stipulate how we want our system to be used a little bit better by removing the ability to add a song to the top of the queue. Since we decided to order stuff by popularity now, we changed the command “play” to add songs to the queue instead of jumping the queue and directly playing. This ensured that unpopular users could not circumvent our popularity system to play Despacito over and over.
+
+
+
+
+
+
+# Server - Requests Database/Queue
+## Server - Requests Database/Queue: Ensure we can perform Spotify API requests on the server and adding in popularity scores
+
+**Video:**
+
+![Requests Database/Queue Demo](https://youtu.be/glSdnLEyXgs)
+
+**Deliverable:** 
+
+Integrate database fully, confirm endpoint is stable. If time, implement popularity scores.
+
+**Process: **
+As the first component of this week’s deliverable is relatively self-explanatory regarding what was done I will be brief. To fully complete the database side or our project we added a new database to store users and their popularities and updated our existing song database to store who added the song. We then added to our post endpoint to allow data on whether a song was liked or disliked to be handled. I will now go into the process of how liking, disliking, and popularity are used in our system by walking through an example of our fully integrated system in action:
+
+1. A user inputs their username, group name, and password onto their system and send a request to add 2 songs to the queue (“Despacito” because apparently our real project is to try and make this song hit the top charts by using it on every single test -_- and “Starships” since it’s still a banger)
+2. Currently “Despacito” is playing and Alex is about to lose his mind so he quickly speaks “dislike” into the mic and sends the request to the server.
+3. Once Alex’s contempt for the song and the user who requested it hits the server we use the song’s uri to find it in our song database which has stored in it which user added the song.
+4. Now with a person to blame, the magic happens and we decrement their popularity score using a simple average. The mechanics of this are we take the number of votes the person has gotten and multiply it with the previous popularity score, 0 since we disliked it, then divide by the number of votes + 1, then finally increment num votes by 1.
+5. Now let’s say we skip to the next song and of course we love it so we like it.
+6. The same mechanic happens but we add 1 instead of 0 to the previous popularity score times the number of total votes, divide by num votes + 1, and increment num votes.
+
+Next let’s say that there are 10 songs in the requested queue and 2 on our spotify queue. In order to decide which song to add to our spotify queue, we loop through our queue database and grab the first song from the highest popularity score user to add to the queue.
+
+More specifically, each song in our song_queue database also has a status. A song is either requeusted or it is queued. At most, three songs can be queued at a time. All other requested songs must compete with each other to be queued (the oldest song requested by a user with the highest popularity score will be queued). 
+
+
+
+# MVP - Multicore
+## MVP - Multicore
+
+**Video:**
+
+![MVP Demo](https://youtu.be/faXX8erUdYA)
+
+**Deliverable:** 
+
+Implement multi-core use. If possible, support multi-threading to allow lights and mic input at the same time.
+
+**Process: **
+In order to implement multi-core we first tried creating a very simple task of turning the leds on one core while also having our blocking code for voice inputs running on the main core’s loop(). We were able to get this up and running pretty fast using the documentation on the 6.08 website so we spent the rest of the time making it work with our existing code. We decided to have our running queue manager loop that hits the server with GET requests on one core along with the lights while keeping the code needed for voice inputs on the other core. This allows everyone to have lights going and voice inputs at the same time! We did spend a decent amount of time trying to debug an issue we ran into where after we recorded audio sometimes the lights would stop updating until we actually send the request which was weird, but we think this was a power problem since team members with less lights in their strip did not have this problem. This meant we were not able to implement the multi-core with our longer light strip so looking at the final project submission the light section will probably focus on how to get enough power to the system. However, in the demo video, we have the longer video running on the multicore system successfully with the correct light show, as well as a concurrent button press on a different core that pings the Google Voice API.
+
+
+<style class="fallback">body{visibility:hidden}</style><script>markdeepOptions={tocStyle:'auto'};</script>
+<!-- Markdeep: --><script src="https://casual-effects.com/markdeep/latest/markdeep.min.js?" charset="utf-8"></script>

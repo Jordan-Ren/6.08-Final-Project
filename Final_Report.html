@@ -1,0 +1,572 @@
+
+     <meta charset="utf-8" emacsmode="-*- markdown -*-"><link rel="stylesheet" href="https://casual-effects.com/markdeep/latest/slate.css?">
+
+
+     **6.08 Final Project Report: Team 15**
+
+Group A: Tue 3-3:30P
+
+David He (dhe127), Sohini Kar (skar), Alex Ellison (acelli), Brandon Yue (byue), Jordan Ren (jordanr1)
+
+# Introduction
+
+During a pandemic, staying safe while enjoying group entertainment is a difficult challenge. However, our SPARTIFY (Spotify+Party) system allows for group-listening to your favorite country, indie rock, whatever-genre-you-want songs! Our project focuses on creating a group Spotify party hosting platform where each user is allowed to add songs to a shared song queue which will be played out of an IOT-connected speaker. Furthermore, what party is complete without sick lights? None. The answer is none. Therefore to complete the party, we connect an ESP32 with an addressable LED strip and tailor custom light shows to the currently playing songs based on characteristics provided by the Spotify Web API.
+
+Some other important features we have integrated are speech to text capabilities using the Google speech to text API so that people with the inability to type efficiently and search for songs (like our beloved team member Alex) can still partake in the fun. We also want to make sure no party-poopers can hop on and ruin the ~vibe~ of our party and multiple groups of people can use the system so we implemented a group and popularity system to ensure only people within our specified group with good taste in music can change the music and influence the direction of the party.
+
+Users request and control songs by speaking commands into the microphone, and we discuss supported commands later in this document. The user is then presented with the command, and can choose whether or not to send the command to the server. Otherwise, the user will have to enter in a new request.
+
+The web server has a basic interface which displays the current song being played as well as the next 3 songs on the queue. Furthermore, the web page plays the current song through the speakers on the device that has access to the Spotify page. We use the Spotify Web Playback SDK, which allows users to create a new Spotify player in Spotify Connect. This allows the audio from a Spotify account to be streamed to a browser.
+
+Every ten seconds the ESP32 sends a GET request to the server in order to determine the current song being played. Based on the song being played, the LED strip generates and displays a unique light show reflecting the mood/genre of the song.
+
+All functionality on the dual-core ESP32 can run concurrently through our multi core functionality, with the microphone system on one core and the light shows on the other.
+
+
+
+
+# Video Demo
+
+![Final Video Demo](https://www.youtube.com/watch?v=8ABML3wtwU4)
+
+
+# Parts
+## 6.08 Kit Parts
+- ESP32
+- Buttons
+- TFT
+- Microphone
+
+## Purchased Parts
+- Light Strips
+- Power Banks
+
+
+# Device Design
+## Preliminary Design
+Our initial design focused on defining a pipeline for requests, song handling, and lights. We defined four main components: a client breadboard, python server, database, and Spotify player. On the side of the client breadboard, we wanted both a microphone to request songs and an LED light strip to play light shows in tandem. We intended for our python server to handle controlling the database and requests, and the Spotify player to be a webpage playing the songs. A preliminary diagram is shown here, with the different components and functionalities intended.
+
+
+![https://github.mit.edu/skar/6.08-Images/blob/master/images/6.08%20preliminary%20diagram.png](https://github.mit.edu/raw/skar/6.08-Images/master/images/6.08%20preliminary%20diagram.png?token=AAAEJ3BH53BMS3WPHCWXDDDAWBVNA)
+
+These are two initial state diagrams for the project, for both an intended guest and host ESP32 systems. The transitions have a tuple associated with them that refers to the button presses: (button 1, button 2). An input of 0 means no button press, 1 means a short button press, and 2 means a long button press.
+
+![https://github.mit.edu/skar/6.08-Images/blob/master/images/6.08%20Final%20Project%20Proposal.jpg](https://github.mit.edu/raw/skar/6.08-Images/master/images/6.08%20Final%20Project%20Proposal.jpg?token=AAAEJ3EDLSGO7L2JQCDLRMTAWBVY6)
+
+![https://github.mit.edu/skar/6.08-Images/blob/master/images/6.08%20Final%20Project%20Proposal%202.jpg](https://github.mit.edu/raw/skar/6.08-Images/master/images/6.08%20Final%20Project%20Proposal%202.jpg?token=AAAEJ3GZHYZDQOBVQTNVMJDAWBV3S)
+
+In the Guest State Machine, the BASE is the LOGIN state, where the guest can login through 1 or more different mechanisms. If the login is correct then move to PARTY state, where the guest has access to a specific group. In this state, the guests can request songs using the buttons. In the Host State Machine, the BASE is the HOST state, where the LED strip and audio will be playing normally as according to the current song. The host can navigate through different groups in GROUP state, they can skip the current song in the group through the SKIP state, and they can delete the current group through DELETE state.
+
+![https://github.mit.edu/skar/6.08-Images/blob/master/images/6.08_ProjectOverview.jpg](https://github.mit.edu/raw/skar/6.08-Images/master/images/6.08_ProjectOverview.jpg?token=AAAEJ3HJGJOLX73A6ZJ7LHDAWBV46)
+
+This was another preliminary design around week 2, with more intended functionality and a full pipeline delineating the different roles. This general structure became more integrated and compact. Some changes were that the host board and light strip became combined with the guest boards so all boards had the same functionality. The voice_text_input.py file also manages the database, which allows us to reduce the role of server.py and remove it. Song playing was moved to be done by index.html instead of the host board.
+
+
+## Design Challenges
+A particularly challenging part of designing our project was determining the degree of synchronicity we wanted to have across devices: perfectly synchronizing lights to the music based on sound input wouldn’t have been a super time consuming endeavor for measly results in terms of what we actually experience since realistically if the lights are .1 seconds off from each other and we are partying in different locations we would never notice. For example, we considered sampling microphone input to set the lights to the beat, but we decided to instead create a more adaptable light show. We also could get song segments from Spotify with more specific information, but we realized that this would detract from the experience if time keeping was messed up.
+
+Another challenge was combining microphone functionality and light shows. As shown in the preliminary designs, we separated the two into “guest” and “host” boards, as trying to sample from the microphone for requests would pause the light show. However, we were able to use multiple cores to run the two simultaneously.
+
+## Final Design
+The final design we went with consisted of 4 main components: The physical hardware (ESP32, Mic, Lights, etc.), the server (our custom API endpoints, user database, song queue database),  the client (Webpage), Spotify’s API. I will briefly go over, at a medium level, how this system is set up.
+
+First, we have the physical hardware which consists of the ESP32, a screen, two buttons, a mic, and our led strip. Since the only thing we added that was different from any of the previous setups we have had in labs I will just mention how it is wired. The leds have 3 wires, one 5v power that we connected to the 5v power of the ESP32, one GND which we connected to the GND on the ESP32, and one data pin which we connected to pin 25.
+
+The next part of our final design is our server. On the server we opted to make a single api to handle posting of voice inputs and getting of song info. We created functions to clean up voice inputs and classify commands such as play, pause, etc. More on this will show up later in this report. We also created two databases to store users and songs in our queue. More on this will show up later as well.
+
+The third piece of our design is our client webpage. This basically just functions to provide a nice and clean visual of various aspects of our system such as what group is listening, what songs are queued, etc.
+
+Finally, we make frequent calls to Spotify’s API in order to collect info on what songs are playing, what features those songs have, and more generally to control what songs are being played and queued.
+
+All-in-all our final system works in the following way:
+1. Users input the name and password of the group they want to party with onto their personal devices and can log into the webpage with the same info and get visuals on what has been queued.
+2. Users can hold the record button on their board and record voice commands such as “add never gonna give you up”, “next song”, “pause”, “resume”, etc then send it with the send button on their device.
+3. After a command is sent, our magical server code cleans it up, parses out key features such as the command (ex. Pause, play, add), song name (ex. Hello, Never gonna give you up, etc.), and artist name (ex. J. Cole, Taylor swift, Louis the child) and calls the necessary functions based on the data extracted.
+4. After parsing the data, if songs are added to the queue, they are tossed into a database with info on who added them, at what time they were added, what features the track has, and what the song uri is so we can actually play them. If commands like pause, resume, or skip are parsed, then as you can imagine those things will happen and the necessary database transactions occur as well. Finally if any errors are thrown at fault of the user, they are notified, else if it is our fault we raise an exception so that we can debug it.
+5. Now in order for our parties to be sick, once there are 3 songs in the queue, we stop adding to the online spotify queue and instead just store requests in our database along with the same things I described earlier. Here is where the cool part comes in. Let's say an unnamed group member (*cough cough* Rhymes with Javid) adds Despacito every 30 seconds and we are tired of hearing it. Each of the other members can dislike the song by using the voice command “dislike” and the unnamed group member’s popularity score will decrease.
+6. Now that we have some updated popularity scores, when our unnamed group member tries to add another song, all group members with higher popularity scores will be priorities above his until his popularity score is brought back up to be with theirs.
+7. Finally, as we are playing music, the ESP32 fires some get requests periodically to get features about whatever song is currently playing in order to craft light shows that change based on the songs genre and bpm.
+
+Now we will discuss in more detail each of the components that went into making Spartify!
+
+
+# Discussion
+## Lights
+Our main goal with lights was to create unique light shows based on the beat and genre of the song playing. Our secondary goal was to implement use of multiple cores to allow for the microphone and voice selection as well as the lights to work in tandem.
+For the lights, we first focused on wiring them up with the ESP32 and having them light up with basic, hard-coded shows. Once we knew they were working, we started to code in light shows for different genres: pop, rock, etc. Pop flashed the lights across the entire strip to produce a filling effect, while rock had the strip make random sections light up with color, and the others did various other patterns. Below is a selection of some of those functions and the code corresponding to it.
+Pop - filling across the strip with a solid color
+````
+void fill_left() {
+  for (int i = 0;i < NUM_LEDS; i=i+10) {
+    for (int j = 0;j < i; j++) {
+      leds[j] = CRGB(int(r+(grad*i)), int(g+(grad*i)), int(b+(grad*i)));
+    }
+    for (int k = i;k < NUM_LEDS; k++) {
+      leds[k] = CRGB(0, 0, 0);
+    }
+    FastLED.show();
+    delay(50);
+  }
+}
+
+````
+Jazz - pulsing red, green, and blue slowly
+````
+void fade_effects() {
+  int color = rand() % 5;
+  for(int k = 0; k < 256; k++) {
+    switch(color) {
+      case 0: set_all(k,0,0); break;
+      case 1: set_all(0,k,0); break;
+      case 2: set_all(0,0,k); break;
+      case 3: set_all(k,k,0); break;
+      case 4: set_all(k,0,k); break;
+      case 5: set_all(0,k,k); break;
+    }
+    delay(3);
+  }
+  for(int k = 255; k >= 0; k--) {
+    switch(color) {
+      case 0: set_all(k,0,0); break;
+      case 1: set_all(0,k,0); break;
+      case 2: set_all(0,0,k); break;
+      case 3: set_all(k,k,0); break;
+      case 4: set_all(k,0,k); break;
+      case 5: set_all(0,k,k); break;
+    }
+    delay(3);
+  }
+}
+````
+
+Once we had basic patterns encoded by genre, we focused on connecting the light show to the Spartify queue. We created an endpoint on the Spotify API side that could be used to extract the currently playing the song. This gave us a way to parse the song name, genre, and bpm to create the light shows based off the songs currently playing. Using the bpm we set each of the patterns to start on the beat of the song. This started off as a big concern for us because we were unsure of how to best line up the show to the beat. We found, however, that by making each of the patterns start at the beat, or atleast close to it, made it to where it generally aligned well without too much work on our end. The code for controlling this is as follows:
+
+````
+void light_handler(void * pvParameters) {
+  while(1) {
+    double time_pass = 5000;
+    int start_timer = millis();
+    if (bpm != 0) {
+       time_pass = 60.0*1000.0/bpm;
+    }
+    switch(pattern) {
+      case 1: piano(); break;
+      case 2: fill_left(); break;
+      case 3: fade_effects(); break;
+      case 4: rainbow(); break;
+      case 5: pong(); break;
+      case 6: twinkle(); break;
+    }
+    while ((millis() - start_timer) < time_pass) {}
+  }
+}
+````
+
+This code works by finding how much time each beat of the song takes in milliseconds. Using this, we give it to our main loop controlling the strip to define how long each pattern should last. This allows the light show to personalize to the given beat of the current song. Our next step was to create a function to convert genres into an integer that can be used to create RGB values/colors for genres that are not hard coded, which allows us to create light shows for any genre we see. This also makes sure that although there is some randomness to the colors assigned for genres that are not hard-coded, they are still discretized when hashed, so a certain string encoding a genre will always produce the same color. This code, although cool, did not make it into our final project as we saw that most of the music we played fit within the genres we picked out and therefore was not necessary.
+
+Finally, we ran into some problems with the light shows and voice inputs blocking each other so we moved the light show code onto its own core in order to allow them to work seamlessly in parallel. The code for adding it to another core is as follows:
+
+````
+xTaskCreatePinnedToCore(
+      light_handler, /* Function to implement the task */
+      "Task1", /* Name of the task */
+      50000,  /* Stack size in words */
+      NULL,  /* Task input parameter */
+      0,  /* Priority of the task */
+      &Task1,  /* Task handle. */
+      0); /* Core where the task should run */
+````
+
+## Voice Selection
+We want to allow users on the ESP32 to be able to send audio input through the microphone and be able to see the results of sending the audio request on the LCD. There should be a variety of different ways to send an audio input and choose which song to play, pause/play the current song, skip the current song, as well as like/dislike the current song. 
+
+First we created an Arduino script to send microphone data to Google Voice API.  Then added voice commands to send during requests. We implemented voice parsing for the commands “play despacito”, “pause”, "resume", and “skip”. To implement the Arduino script to send microphone data to the Google Voice API we modified the code from lab07a to fit our needs. The user can hold down a button for up to 5 seconds to record audio data, then a request is sent to the Google Voice API. To ensure that the voice command worked as frequently as possible the phrases “play despacito”, “pause”, "resume", and “skip” were chosen with more bias (from lab07a). Finally, the response from the API would be parsed and a sequence of if/else statements would choose which action to send to the server. The server would then parse the request and return a string stating which action was completed. Here we have our request code that sends the user name, group, password, and voice transcript to the server, which then parses voice inputs to determine which actions should be completed.
+
+````
+void send_request(char * trans) {
+  char body[100]; //I need to be changed.
+  sprintf(request_buffer, "POST http://608dev-2.net/sandbox/sc/team15/final/voice_text_input_with_secrets.py HTTP/1.1\r\n");
+  sprintf(request_buffer + strlen(request_buffer), "Host: %s\r\n", host);
+  strcat(request_buffer, "Content-Type: application/x-www-form-urlencoded\r\n");
+  sprintf(body, "user=jordanr1&group=test1&password=pass1&voice=%s", trans);
+  sprintf(request_buffer + strlen(request_buffer), "Content-Length: %d\r\n\r\n", strlen(body));
+  strcat(request_buffer, body);
+  do_http_request(host, request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
+  Serial.println(response_buffer);
+  tft.setCursor(0,0);
+  tft.println(response_buffer);
+}
+````
+
+Next we created a state machine to re-record audio and send audio to the server as the user wishes. Our implementation was a two-step button-press check that the user can do before actually sending the microphone data to validate the input is correct. If the input is incorrect, a different button-press allows the user to re-record. If the input is correct, a button-press can send the input as a GET request to our server endpoint. In the code below we run audio control as always to parse audio input from lab07a, when the user wants to send audio 
+
+After implementing the state machine we created a list of available commands and alternate phrasing for each of the available commands. Instead of doing some low level parsing in C, we send the raw Google Speech API text to the server. On the server the audio input text is cleaned by removing any phrases from the end of the text which could possibly be interpreted as a song name (next, now, to the queue). Next, in order from top to bottom in the list above, the keywords are searched for in the text, and the appropriate command is given for the server to execute. 
+Furthermore, whenever any commands that can add to the queue are chosen, the last part of the text input is parsed for a possible artist name, which can be extracted by taking all words following the words “by” or “bye”. “Bye” was chosen as a potential word to denote a possible artist as oftentimes the Speech API would recognize “by” as “bye”. When dealing with audio inputs we first clean the input to generate phrases that can be parsed by the final code block. When a play or add request is added the function parse_artist gets called to determine if any artists were requested. Finally a command is determined from the audio inputs to perform database and API functions.
+
+````
+def clean_input(voice_input):
+    try:
+        voice_input = voice_input.lower()
+        voice_input = voice_input.replace('"', "")
+        if voice_input[-1] == '.':
+            voice_input = voice_input[:-1]
+        voice_input = voice_input.replace("to the queue", "")
+        voice_input = voice_input.replace("to the q", "")
+        voice_input = voice_input.replace("can you please", "")
+        # voice_input = voice_input.replace(voice_input.split("play")[0], "") # remove everything before "play [song]"
+        inp_list = voice_input.split(' ')
+        if "next song" not in voice_input and "next" == inp_list[-1]:
+            voice_input = voice_input.replace("next", "")
+        if "now" == inp_list[-1]:
+            voice_input = voice_input.replace("now", "")
+        return voice_input
+    except:
+        raise Exception("Could not clean voice input")
+````
+
+````
+def parse_artist(song_desc):
+    try:
+        data = {}
+        if "by" in song_desc[:-1]:
+            song = " ".join(song_desc[:song_desc.index("by")])
+            artist = " ".join(song_desc[(song_desc.index("by") + 1):])
+        elif "bye" in song_desc[:-1]:
+            song = " ".join(song_desc[:song_desc.index("bye")])
+            artist = " ".join(song_desc[(song_desc.index("bye") + 1):])
+        else:
+            song = " ".join(song_desc)
+            artist = "None"
+        data["song_name"] = song
+        data["artist_name"] = artist
+        return data
+    except:
+        raise Exception("Could not parse artist")
+
+def parse_voice_input(voice_input):
+     try:
+          voice_input = clean_input(voice_input)
+          input_list = voice_input.split()
+          data = {}
+          if "skip" in input_list or "next song" in voice_input:
+               command = "skip"
+          elif "play" in input_list:
+               command = "play"
+               data = parse_artist(input_list[(input_list.index("play") + 1):])
+          elif "add" in input_list:
+               command = "add"
+               data = parse_artist(input_list[(input_list.index("add") + 1):])
+          elif "queue up" in voice_input or "q up" in voice_input:
+               command = "add"
+               data = parse_artist(input_list[(input_list.index("up") + 1):])
+          elif "pause" in input_list:
+               command = "pause"
+          elif "resume" in input_list:
+               command = "resume"
+          elif "clear" in input_list:
+               return "clear", None
+          elif "like" in input_list:
+               command = "like"
+          elif "dislike" in input_list:
+               command = "dislike"
+          elif "testing" in input_list:
+               command = "testing"
+          else:
+               command = "No Command"
+          return command, data
+     except Exception as e:
+          raise e
+````
+
+For our final week we made sure error handling is appropriate and integrated with the rest of the system, and also added like-dislike audio input parsing for the current song. Integration went relatively smoothly with some issues handling multi-core processing. More on the mechanics of the actual liking and disliking can be found in the Requests/Database Queue section.
+
+Finally we are smoothing out the multicore processing so that no errors occur when recording audio input and displaying lights at the same time.
+
+
+## Webpage and SDK
+Since we felt that the speakers on the ESP32 could not give our users the audio fidelity they deserve, we decided to make a per-group web client, styled after Spotify’s. Using the Spotify web SDK we were able to play music, extract upcoming songs, and display songs entered by ESP32 devices into the queue. The only caveat behind this is that to use the web client we need to constantly request for and extract Spotify Web SDK tokens in order to use the web SDK, but for a proof-of-concept we deemed this to be acceptable (particularly because there are no other viable alternatives which we could have coded up in a month). 
+
+Once we had a simple page that could play songs, show the queue, and show the currently playing songs on the page, we decided to improve the UI and make the aesthetic more similar to Spotify. We created a preliminary mockup, which is shown first. The final page is shown after.
+
+![https://github.mit.edu/skar/6.08-Images/blob/master/images/6.08_spartify_mockup.jpg](https://github.mit.edu/raw/skar/6.08-Images/master/images/6.08_spartify_mockup.jpg?token=AAAEJ3CGJNDM4TQYED5PQZDAWCBPG)
+
+![https://github.mit.edu/skar/6.08-Images/blob/master/images/6.08_spartify_currentUI.png](https://github.mit.edu/raw/skar/6.08-Images/master/images/6.08_spartify_currentUI.png?token=AAAEJ3F4ANLWVFHJWGLSNUDAWCBRA)
+
+Our main goal was to emulate the Spotify UI while maintaining a clear flow. The most relevant information for the user, the group ID and current song playing, was put on the left. The actual queue was put on the right in a similar style to a regular Spotify queue.
+
+## Spotify API
+We wanted to provide a seamless music experience for users within a reasonable timeframe and budget by leveraging Spotify’s existing API to stream music and extract information pertaining to said music. That being said, by using the Spotify API we had to make a few tradeoffs. For example, only one group can use a single Spotify account at a time, which is fine for a simple demo, but if we were to scale this project up to potentially thousands of people, we would have to find a more cost effective alternative such as establishing our own streaming service or partnering directly with a music streaming company. Fortunately, the Spotify API gives us everything we need for a Proof-Of-Concept, including song/artist names, genre, and really anything else we could ever want to use to classify and identify music. Most of the functionality of our server api we built to interphase with this is explained in the voice selection and database sections, but I will briefly describe the main design of our POST and GET requests.
+The POST: The post request handles most of our functionality. It takes in the group name and password, username, and voice input and facilitates communication between the spotify api and adding stuff to our database. An example of our post request code is as follows:
+
+````
+if request['method'] == "POST":
+     if request["form"].get('code'):
+          auth_manager.get_access_token(request["form"]["code"])
+          return "Token added"
+     else:
+          if not auth_manager.validate_token(cache_handler.get_cached_token()):
+               auth_url = auth_manager.get_authorize_url()
+               return f'<h2><a href="{auth_url}">Sign in</a></h2>'
+     try:
+          sp = spotipy.Spotify(auth_manager=auth_manager)
+          username = request["form"].get("user")
+          group_name = request["form"].get("group")
+          password = request["form"].get("password")
+          voice_input = request["form"].get("voice")
+          command, data = parse_voice_input(voice_input)
+          response = None
+          if group_name in VALID_GROUPS and VALID_GROUPS[group_name] == password:
+               if command == "play" or command == "add" and data.get("song_name"):
+                    response = get_song_uri(sp, data.get("song_name"), data.get("artist_name"))
+                    add_song_to_db(sp, song_uri=response.get("track_uri"), song_name=response.get("song_name"),
+                                   group_name=group_name, user_name=username)
+                    # add_song_to_queue(sp, response['track_uri'])
+                    add_user(group_n = group_name, user_name = username)
+                    return f"Song: {response.get('song_name')} added to the requests queue"
+               elif command == "pause":
+                    pause(sp)
+                    return "Paused playback"
+               elif command == "resume":
+                    resume(sp)
+                    return "Resumed playback"
+               elif command == "clear":
+                    clear_queue()
+                    return "Cleared Queue"
+               elif command == "skip":
+                    sp.next_track()
+                    next_song = skip_song(sp, group_name)
+                    return f"The next song in the queue is {next_song}"
+               elif command == "like":
+                    user = like_dislike_user(sp, 1)
+                    return f"You liked {user}'s song"
+               elif command == "dislike":
+                    user = like_dislike_user(sp, 0)
+                    return f"You disliked {user}'s song"
+               elif command == "None":
+                    return "Invalid voice input, please try again"
+               return response
+          else:
+               return "Invalid Group or Invalid Group Password"
+     except Exception as e:
+          raise e
+````
+
+This shows us getting a request and two of the possible request types we handle, namely, adding a song to the queue and pausing the playback.
+The GET: The get request takes in the group info and interfaces with our database and spotify to get info about the song that is currently playing. An example of part of our get request is as follows:
+
+````
+elif request["method"] == "GET":
+     try:
+          sp = spotipy.Spotify(auth_manager=auth_manager)
+          group_name = request["values"]["group"]
+          #Brandon and David added this field for returning more song info
+          if group_name in VALID_GROUPS:
+               if "requests" not in request["values"]:
+                    queue_manager(sp, group_name)
+                    with sqlite3.connect(ht_db) as c:
+                         data = c.execute(
+                              """SELECT song_name, tempo, danceability, segments FROM song_queue WHERE status = ? AND group_name = ? ORDER BY time_ ASC LIMIT 1;""",
+                              ("queued", group_name,)).fetchone()
+                         if not data:
+                              return {"name": "", "tempo": 0, "genres": ["empty"]}
+                         if not sp.currently_playing():
+                              return {"name": "", "tempo": 0, "genres": ["empty"]}
+                         artist_uri = sp.currently_playing()['item']['artists'][0]['uri']
+                         genres = sp.artist(artist_uri).get('genres')
+                         data = list(data)
+                         data.append(genres)
+                         data2 = {"name": data[0], "tempo": data[1], "genres": genres}
+                         return data2
+               else:
+                    with sqlite3.connect(ht_db) as c:
+                         data = c.execute(
+                              """SELECT song_name, time_ FROM song_queue WHERE group_name = ? ORDER BY time_ ASC LIMIT 3;""",(group_name,)).fetchall()
+                         if not data:
+                              return {"name": "", "tempo": 0, "genres": ["empty"]}
+                         if len(data) == 0:
+                              return {"name": "", "tempo": 0, "genres": ["empty"]}
+                         return data
+     except Exception as e:
+          raise e
+     else:
+          return "Invalid group given"
+else:
+     return "invalid HTTP method for this url."
+````
+
+This shows us returning the name, tempo, and genre of the currently playing song and calling queue_manager.
+
+Lasly, I will mention how the queue manager works as this is an integral part of the project design. Basically how it works is that we get how many songs are on the queue and check if there are three, if there are not then we add the next most popular songs if more have been requested. Next, we handle deleting songs from the queue to make sure after a song is skipped or finishes playing, it is no longer on our queue. To do this we check what song is currently playing and check it against our record of the queue. If the songs differ we recursively delete the song in our queue from the database until they match up again and our queues are rectified with that of spotifies. This allows for the system to correct itself even if someone skips to the next song on their spotify account and not our system. To make sure we are up to date our systems hit this function every time they send a get request (every 10 seconds). The code for this is as follows:
+
+````
+def queue_manager(sp, group_name):
+    songs_on_queue = get_requested()
+    if len(songs_on_queue) < 3:
+        with sqlite3.connect(ht_db) as c:
+            songs_to_add = 3 - len(songs_on_queue)
+            reqed_songs = c.execute("""SELECT song_uri, user_name FROM song_queue WHERE status = ? ORDER BY time_ ASC;""",
+                        ('requested',)).fetchall()
+            its = min(songs_to_add, len(reqed_songs))
+            for i in range(its):
+                reqed_users = {x[1] for x in reqed_songs}
+                user_pops = c.execute("""SELECT user_name, popularity FROM song_users WHERE group_name = ?""", (group_name,)).fetchall()
+                users_ = [x for x in user_pops if x[0] in reqed_users]
+                if len(users_) > 0:
+                    best_user = max(users_, key=lambda x: x[1])[0]
+                    song = c.execute("""SELECT song_uri FROM song_queue WHERE user_name = ? AND group_name = ? ORDER BY time_ ASC LIMIT 1""", 
+                                    (best_user, group_name,)).fetchone()
+                    add_song_to_queue(sp, song_uri=song[0])
+                    c.execute("""UPDATE song_queue SET status = ? AND time_ = ? WHERE status = ? AND group_name = ? AND user_name = ? AND song_uri = ?""", 
+                             ("queued", datetime.datetime.now(), "requested", group_name, best_user, song[0],))
+                    reqed_songs = c.execute("""SELECT song_uri, user_name FROM song_queue WHERE status = ? ORDER BY time_ ASC;""", ("requested",)).fetchall()
+    currently_playing = sp.currently_playing().get('item')
+    if currently_playing:
+        song_uri = currently_playing.get('uri')
+        with sqlite3.connect(ht_db) as c:
+            res = c.execute("""SELECT song_uri FROM song_queue WHERE status = ? AND group_name = ? ORDER BY time_ ASC LIMIT 1;""",
+                            ("queued", group_name,)).fetchone()
+        if res:
+            res = res[0]
+        if res and song_uri != res:
+            skip_song(sp, group_name)
+            queue_manager(sp, group_name)
+```
+
+## Database
+We have a single database, song.db, with two tables, song_queue and song_users. 
+
+The table, song_queue, stores all of the songs requested by users for all groups, along with information for the songs and a status to mark whether or not the song has been “requested” or “queued”. In this table we store the following column fields:
+
+1. time_: timestamp
+2. group_name: text
+3. user_name: text
+4. status: text
+5. song_name: text
+6. song_uri: text
+7. tempo: real
+8. energy: real
+9. time_signature: integer
+10. danceability: real
+11. segments: text
+
+The table, song_users, stores all of the users for all groups along with their popularity score. In this table we store the following column fields:
+
+1. group_name: text
+2. user_name: text
+3. popularity: real
+4. votes: real
+
+The main thing our database is responsible for is choosing which requested songs to play based on user popularity and listening for our commands such as “like”, “dislike”, “skip”, “pause”,  and “resume”. 
+
+Again, the main function of our system is the queue_manager(), as mentioned in the Spotify API section. It gets the number of songs on the actual Spotify queue. If this number is less than 3, we will connect to our database and search for requested songs. We will then see how many songs we can get and then get the number of songs that will allow us to have 3 songs queued on actual Spotify. When getting songs from the requested songs table in our database, song_queue, we choose the songs of the users with the maximum popularity. The status of these songs are then set to “queued” from “requested” and the timestamp time_ is set to the current datetime when it was “queued”. 
+ 
+Our database was also responsible for getting the audio features of requested songs for the light show. Based on the song uri, we can use song statistics such as tempo, danceability, energy, time_signature, danceability, and segments from the Spotipy. These metrics would be used and sent to the ESP32 for the light shows.
+ 
+The user who added the current song to the queue can be found by getting the current song’s URI from the spotify API, then searching for the user with the oldest song in our database with the same song URI. Currently, popularity is updated by taking the (current_pop * tot_votes + new_vote) / (tot_votes + 1). This would update the average popularity of the user based on the type of vote they received.
+ 
+We updated our existing song database to store who added the song. We altered the post endpoint to allow data on whether a song was liked or disliked. The process of how liking, disliking, and popularity are used in our system can be explained through this example of our fully integrated system:
+ 
+1. A user inputs their username, group name, and password onto their system and send a request to add 2 songs to the queue (“Despacito” because apparently our real project is to try and make this song hit the top charts by using it on every single test -_- and “Starships” since it’s still a banger)
+2. Currently “Despacito” is playing and Alex is about to lose his mind so he quickly speaks “dislike” into the mic and sends the request to the server.
+3. Once Alex’s contempt for the song and the user who requested it hits the server we use the song’s uri to find it in our song database which has stored in it which user added the song.
+4. Now with a person to blame, the magic happens and we decrement their popularity score using a simple average. The mechanics of this are we take the number of votes the person has gotten and multiply it with the previous popularity score, 0 since we disliked it, then divide by the number of votes + 1, then finally increment num votes by 1.
+5. Now let’s say we skip to the next song and of course we love it so we like it.
+6. The same mechanic happens but we add 1 instead of 0 to the previous popularity score times the number of total votes, divide by num votes + 1, and increment num votes.
+ 
+Next let’s say that there are 10 songs in the requested queue and 2 on our Spotify queue. In order to decide which song to add to our spotify queue, we loop through our queue database and grab the first song from the highest popularity score user to add to the queue.
+ 
+More specifically, each song in our song_queue database also has a status. A song is either requeusted or it is queued. At most, three songs can be queued at a time. All other requested songs must compete with each other to be queued (the oldest song requested by a user with the highest popularity score will be queued).
+
+## Like and Disliking Songs
+Users in the same group can like or dislike the current song playing, which will affect the user in the group who requested the song. 
+
+User popularity is calculated by the following metric: the sum of the likes/the sum of the total votes:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def update_user_popularity(group_n, user_n, vote):
+    with sqlite3.connect(ht_db) as c:
+        res = c.execute("""SELECT popularity, votes FROM song_users WHERE group_name = ? AND user_name = ?;""",
+                        (group_n, user_n)).fetchall()
+        if len(res) > 0:
+            prev_pop, tot_votes = res[0]
+            new_popularity = (vote + prev_pop * tot_votes) / (tot_votes + 1)
+            c.execute("""UPDATE song_users SET popularity = ?, votes = ? WHERE group_name = ? AND user_name = ?""",
+                      (new_popularity, tot_votes + 1, group_n, user_n))
+            res = c.execute("""SELECT * FROM song_users WHERE group_name = ? AND user_name = ?;""",
+                            (group_n, user_n)).fetchall()
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ 
+## Multicore
+We took advantage of the fact that the ESP32 has a dual-core processor to run blocking code for voice-to-text in parallel with light show code which naturally cannot wait for the blocking code to finish before execution. 
+ 
+## Integration
+The integration of our system was relatively smooth. Most of our weekly deliverables included some aspect of communication with other components of our system. As a result, we had to communicate with each other constantly to ensure other teams could progress. This made our final integration towards the end of the project a relatively simple process. One issue that we found was with integrating our audio control and light show all on the same ESP32. We had issues with power as well as some GURU mediation errors which would cause our system to crash. In the end we were able to fully integrate our system to finish our project.
+ 
+ 
+ 
+# Conclusion
+    We found this project to be extremely fun to implement and design. Throughout our weekly meetings we were able to iterate on the goals and implementations of our design to come up with what we thought was an interesting end product. Even though there were some issues along the way, going through the entire design process for a full stack system design was a rewarding experience, and we hope to show off and use Spartify in the future.
+ 
+ 
+# Video Demos and Milestones
+## Lights
+![Week 1](https://youtu.be/Ll8X61r39nk)
+
+![Week 1: This video helped us understand how to wire our circuit and encouraged us to think about how to create light shows.](https://youtu.be/D5Ss9gom1H0)
+
+![Week 2: From this, we understood better what light shows would work the best, between several hand-coded options.](https://youtu.be/053C2ukaD4o)
+
+![Week 3: This video was focused on integrating with the Spotify API, and helped us understand what information we could extract for the current song.](https://youtu.be/CvlQKO6QNL0)
+
+![Week 4: This video demonstrates the final light show.](https://youtu.be/UPKYD5oOLWI)
+
+## Voice Selection
+![Week 1: This video allowed us to record voice audio and send it through a POST request to a server. It also served as the base for our audio parsing.](https://youtu.be/f2k8Zyaly28)
+
+![Week 2: This demonstration is an example of the state machine we use to record audio, re-record audio, or send audio to the server.](https://youtu.be/Az5K4-ezc90)
+
+![Week 3: In this milestone we showed that a wide variety of common ways to request, pause, resume, and skip songs are possible. This made our system more robust to mis-recorded audio as well as any weirdly phrased requests.](https://youtu.be/2Qo6Hak-ecw)
+
+![Week 4: Lastly, we demonstrated that our system can like/dislike the current song while also having lights running in the background (the “heyo”, 0 outputs). This part was extremely important to making sure our system worked with audio recording and lights.](https://youtu.be/psmEQ_Y2WxI)
+
+## Webpage and SDK
+![Week 1: This video helped us by demonstrating that it was possible to have our own custom website to play the music out of.](https://youtu.be/pR1Gjc_mn60)
+
+![Week 2: We learned from this milestone how to update our website to reflect what is currently being played on spotify.](https://youtu.be/stfPUVgt5JE)
+
+![Week 3: We learned from this milestone how our users could view a continuously refreshed song queue from our in-house database. ](https://youtu.be/cg1asKNpM0g)
+
+![Week 4: Lastly, we beautified our web client, making it match Spotify’s color scheme, adjusting placement of the information, and overall making it more pleasing to look at.](https://youtu.be/_tHH3ftc5fE)
+
+## Spotify API
+![Week 1](https://youtu.be/z0pMYl6-UWU)
+
+![Week 1: This video helped us flesh out how we wanted to implement our api by showing there were a couple options for playing music, namely URI and URL.](https://youtu.be/r10CKiQ-geQ)
+
+![Week 2: This video helped us learn how to connect the database with our api to allow us to store the data we needed and access it nicely from the ESP32](https://youtu.be/e-dEJOcDwhs)
+
+![Week 3 (Similar to below but presented by Alex)](https://photos.app.goo.gl/7KCxBhJdAMd59BKR7)
+
+![Week 3: This video showed the arduino interfacing with the spotify account acting as an audio controller.](https://youtu.be/oit7jC7t_kQ)
+
+![Week 4: Lastly, this video shows some of the errors we log and throw to allow for a better user and developer experience.](https://youtu.be/R2EbJosHvk8)
+
+## Database and Server
+![Week 1: This video helped us demonstrate that we could create a database which could manage our music groups and their respective queues, and that we could use Postman requests to modify said queue.](https://youtu.be/Hn7UDht9yGE)
+
+![Week 2: In hindsight, this video demonstrated that we could retrieve the next 4 songs and handle updating the queue when a song finished playing.](https://youtu.be/iQkeF5hhbxA)
+
+![Week 3: In this video we demonstrated our new database added to contain all the users who have added a song to the queue, as well as their popularity scores so that we can score users and prioritize highly scored users in the song request queue.](https://youtu.be/zi0wyRmprO8)
+
+![Week 4: key part of our final product. Implementing a like/dislike function that allows people to favor certain users on the queue incentivises people to ony queue songs that fit the current mood/vibe of the party!](https://youtu.be/glSdnLEyXgs)
+ 
+## Week 3 Integration Demo
+![Week 3 MVP Demo](https://youtu.be/DcvY_iR0DrE)
+
+## Week 4 Preliminary Demo
+![Week 4 Demo](https://youtu.be/faXX8erUdYA)
+
+
+
+<style class="fallback">body{visibility:hidden}</style><script>markdeepOptions={tocStyle:'auto'};</script>
+<!-- Markdeep: --><script src="https://casual-effects.com/markdeep/latest/markdeep.min.js?" charset="utf-8"></script>

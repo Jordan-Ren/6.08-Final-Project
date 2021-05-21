@@ -1,0 +1,124 @@
+
+     <meta charset="utf-8" emacsmode="-*- markdown -*-"><link rel="stylesheet" href="https://casual-effects.com/markdeep/latest/slate.css?">
+
+
+     **6.08 Final Project Week 3 Deliverables/Demos Update: Team 15**
+
+Group A: Tue 3-3:30P
+
+David He (dhe127), Sohini Kar (skar), Alex Ellison (acelli), Brandon Yue (byue), Jordan Ren (jordanr1)
+
+Here are updates for our Week 3 Deliverables and Demos
+
+# ESP32 - Lights
+## Match lightshow patterns to song beat
+
+**Videos:**
+
+![ESP32 Lights](https://youtu.be/CvlQKO6QNL0)
+
+
+**Deliverable:** 
+
+Connect light script to the database and get the information from Spotify about beats and genre. Use that information to create a light show that uses the information and goes along with the beat, specifically using a function that joins the two. Demo light show.
+
+**Process:**
+
+We revamped the genre script in order to support both beats per minute/tempo (bpm) and genre based light shows. First, we created a new endpoint to maintain a dictionary of the currently playing song, with its name, tempo, and list of genres. We then created a lookup in the light show script targeting the endpoint and extracting the response.
+
+We convert the response into a JSON Document using the ArduinoJSON library. This allows us to parse the various fields. We extract the beats from here as the bpm, as well as a JsonArray of the genres. We conduct the lookup and get these fields every 10 seconds, but this can be adjusted as necessary.
+
+With the bpm and genre information, we use them as parameters for the main lightshow function. First, the bpm are converted to how long each cycle of the lights should be, we do 60*1000/bpm to get how long a beat is in milliseconds for the song, and this is used to time for loops to control how long the lights change at each cycle. We then use a genre select function to find which broader genre the song falls under, and control the RGB value of the lights this way. Currently, we support pop music (red/pink), rock music (green), and lo-fi music (blue/green blue).
+
+Using the Spotify information which provides the time for each beat and the color mapped by the genre, we then successfully create a light show customized to each song.
+
+
+
+# ESP32 - Voice Selection
+## Implement common phrasing and pick out important pieces from inputs 
+
+**Video:**
+
+![ESP32 - Voice Selection](https://youtu.be/zi0wyRmprO8)
+
+**Deliverable:** 
+
+Present a list of available commands and alternate phrasing as well as demonstration for each of the available commands. (Look into transfering requests from db onto an actual queue)
+
+**Process:**
+Here is the list of all commands. The * represents any possible string excluding any of the keywords in the current “tier” or above. For instance, if you said: “play skip now”, the input would be parsed as a “skip” action. 
+
+![Voice Commands](https://drive.google.com/uc?export=view&id=1LG7B49TlrksSxVcxblR4rXohTJwu3f9k)
+
+Instead of doing some low level parsing in C, we send the raw Google Speech API text to the server. On the server the audio input text is cleaned by removing any phrases from the end of the text which could possibly be interpreted as a song name (next, now, to the queue). Next, in order from top to bottom in the list above, the keywords are searched for in the text, and the appropriate command is given for the server to execute. Furthermore, whenever any commands that can add to the queue are chosen, the last part of the text input is parsed for a possible artist name, which can be extracted by taking all words following the words “by” or “bye”. “Bye” was chosen as a potential word to denote a possible artist as often times the Speech API would recognize “by” as “bye”.
+
+# ESP32/Server - Playing songs
+## Add information from database onto our index html page
+
+**Video:**
+
+![ESP32/Server Demo](https://youtu.be/cg1asKNpM0g)
+
+**Deliverable:**
+
+Display database information for a group on index.html. The information should include song requests that will be added to the queue.
+
+**Process:**
+
+We added a new section of the index html that constantly refreshes and displays the three oldest song requests using Javascript’s built-in setInterval() method to periodically make calls to getQueue() every second. Inside getQueue we make a get request to retrieve the three oldest songs requested and display them on the web page by extracting the information as an array in string format, then tokenizing it with liberal use of Javascript’s replace() and the split() functions. We differentiate this from other get requests through the use of a sentinel variable called “requests”. These songs are specific to a certain group and are updated using our server’s queue (songs we plan to add to the actual Spotify queue but haven’t yet) allowing for potentially longer queue listings as well as usernames which submitted specific songs and the user’s popularity.
+
+# Server - Spotify API
+## Connect API features to actually spotify to play music based off voice commands.
+
+**Video:**
+	
+![Spotify API Demo](https://photos.app.goo.gl/7KCxBhJdAMd59BKR7)
+
+![Spotify API](https://youtu.be/oit7jC7t_kQ)
+
+**Deliverable:** 
+
+Clean up and connect ESP32, database, and API's. Fix issues with user authentication to allow full control over someone's Spotify account. Demo controlling users Spotify accounts from the server. Ensure that we can use Spotify API requests with Requests Databases/Queue team.
+
+**Process:**
+
+This week we had a bit of a battle with the server setup, spotipy’s authorization code flow, and spotify so we spent some time learning how to override Spotipy’s authorization flow and implementing a way to write a token to a specific location. This allowed us to control our spotify account from the 608 server which was an integral part of our project.
+
+The rest of the week we hooked up the database, Spotify API, and arduino and decided on using a GET request that hits the server every second to get information on the song currently playing from both Spotify and our database. This also ensures that when the song finishes we update our queue and lights efficiently without too much of a delay. Unfortunately we realized this week it is going to be a bit of a challenge to allow all devices to record audio, have light shows going, and have this constant looping GET request to keep things up to date so we spent some time brainstorming how to troubleshoot the issue. We decided to look into multithreading so we can have a thread that handles the lights and GET requests and another which handles voice updating. We also thought of possibly having a host machine which handles the GET requests and lights, and then have the rest of the devices act as auxiliary units that can be used to control the queue and make other voice commands. We are unsure exactly what the best option is, but we look forward to deliberating more on this next week.
+
+What we have to show this week in our demo video is a walk through of us interacting with spotify on the computer from the ESP32.
+
+# Server - Requests Database/Queue
+## Ensure we can perform Spotify API requests on the server and adding in popularity scores
+
+**Video:**
+
+![Requests Database/Queue Demo](https://youtu.be/2Qo6Hak-ecw)
+
+**Deliverable:** 
+
+Show that we can add songs to the queue, skip, pause, and resume songs from the server to Spotify. Ensure that we can use Spotify API requests from the server. Add in popularity score for users on the database
+
+**Process: **
+
+A lot of this week’s work was done with integrating the database and queue together with the voice parsing and light show. To prepare for the new popularity upvote/downvote system for the current song being played, we created a new database that contains all users that have added a song to the queue, with an initial popularity score of zero. When a user wants to upvote/downvote a song that is currently being played, they should be able to update the popularity of the person who put the current song on the queue. This endpoint has not been created yet, but should include a keyword such as “upvote”/”like” or “downvote”/”dislike” to choose to boost or decrease the popularity of a user respectively. And the user who added the current song to the queue can be found by getting the current song’s URI from the spotify API, then searching for the user with the oldest song in our database with the same song URI. Currently, popularity is updated by taking the (current_pop * tot_votes + new_vote) / (tot_votes + 1). This would update the average popularity of the user based on the type of vote they received. 
+
+
+
+# MVP - Integration Demo
+## Have a minimum viable product and end-to-end system demo.
+
+**Video:**
+
+![MVP Demo](https://youtu.be/DcvY_iR0DrE)
+
+**Deliverable:** 
+
+Show that we have a minimum viable product with two client/users interacting.
+
+**Process: **
+
+We made sure that we had an end-to-end mvp to demo. We did a lot of debugging to make sure all of our code works together correctly and prepared a zoom demo. Sohini had the songs playing from her laptop along with the lights. She shared her screen and was displaying our Spartify index.html web page which shows the requested songs along with the current spotify queue. There is currently an issue with both the audio recording and the lights being blocking, as such we started looking into threading to have both actions being completed at the same time. 
+
+<style class="fallback">body{visibility:hidden}</style><script>markdeepOptions={tocStyle:'auto'};</script>
+<!-- Markdeep: --><script src="https://casual-effects.com/markdeep/latest/markdeep.min.js?" charset="utf-8"></script>

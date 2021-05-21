@@ -1,0 +1,113 @@
+
+     <meta charset="utf-8" emacsmode="-*- markdown -*-"><link rel="stylesheet" href="https://casual-effects.com/markdeep/latest/slate.css?">
+
+
+     **6.08 Final Project Week 1 Deliverables/Demos Update: Team 15**
+
+Group A: Tue 3-3:30P
+
+David He (dhe127), Sohini Kar (skar), Alex Ellison (acelli), Brandon Yue (byue), Jordan Ren (jordanr1)
+
+Here are updates for our Week 1 Deliverables and Demos
+
+# ESP32 - Lights
+## Figure out how to flash different lights at different frequencies
+
+**Videos:**
+
+![ESP32 Lights Demo](https://youtu.be/Ll8X61r39nk)
+
+![ESP32 Lights (Additional Demo)](https://youtu.be/D5Ss9gom1H0)
+
+**Deliverable:** 
+
+Have the addressable LEDs connected to an Arduino. Connect both to power source and create script to control the LEDs. Show video or demo of lights flashing on and off.
+
+**Process:**
+
+To connect the LEDs to the Arduino, we first connected the wires to ground, pin 25, and to the power (either 5V or 3.3V depending on if a power bank was available). Once the LED strip itself was connected, we decided to use the FastLED library, so we installed that into our libraries.
+
+For the script controlling the LEDs themselves, we first tried singular colors. To do this, we added all the LEDs in our `setup()` method, specifying the pin the strip was connected to and adding the number of LEDs on the strip, which for us was 150. Once we had all the LEDs added, we can control their color at each run of the loop by directly addressing each one individually and adjusting their color. By setting every LED to `CRGB(0, 0, 50)` the whole strip was blue.
+
+We also created a script to have the strip flash rainbow. Through this, we adjusted each LED at every step of the loop to the same color, which changed every loop to the next color in the rainbow. A video of this is posted above.
+
+
+# ESP32 - Voice Selection
+## Get voice selection to work for one-to-one mapping from voice command to spotify commands
+
+**Video:**
+
+![ESP32 Voice Selection Demo](https://youtu.be/f2k8Zyaly28)
+
+**Deliverable:** 
+
+Create Arduino script to send microphone data to Google Voice API. Add voice commands to dictionary to send during reuqests. Show voice selection working for “play despacito”, “pause”, "resume", and “skip” and the correct answers are being returned.
+
+**Process:**
+
+To implement the Arduino script to send microphone data to the Google Voice API we modified the code from lab07a to fit our needs. The user can hold down a button for up to 5 seconds to record audio data, then a request is sent to the Google Voice API. To ensure that the voice command worked as frequently as possible the phrases “play despacito”, “pause”, "resume", and “skip” were chosen with more bias (from lab07a). Finally, the response from the API would be parsed and a sequence of if/else statements would choose which action to send to the server. The server would then parse the request and return a string stating which action was completed.
+
+
+# ESP32/Server - Playing songs
+## Get basic audio streaming using the SDK.
+
+**Video:**
+
+![ESP32/Server SDK Demo](https://youtu.be/pR1Gjc_mn60)
+
+**Deliverable:**
+
+Be able to use SDK for streaming. Show that it works to stream “Despacito.”
+
+**Process:**
+
+First, we read through the Spotify Web Playback SDK documentation found [here](https://developer.spotify.com/documentation/web-playback-sdk/#supported-browsers). We then generated a new web playback sdk access token, and linked a new Spotify Connect device appropriately titled “Web Player” which used the web playback token. Once this was done, we added the appropriate initialization code for our player (error handling, status updates, and ready state) then connected. With that, we were able to stream Spotify audio from a desktop client, but we expect to be able to stream without one once we integrate with the Spotify API group’s work. 
+
+In terms of difficulties we encountered, this section of the project was straightforward due to the extensive documentation found on the Spotify Website. Finding the documentation online (and differentiating it from the Spotify API documentation) was a bit of a challenge, as there is a lot of overlapping functionality so it will be hard to pick apart exactly where we want to use each to accomplish our goals. Fortunately, Spotify has good documentation so this shouldn’t be a big issue. One of the more annoying hoops we have to jump through is that the web playback token expires every hour so this is something we need to consider when we demo (either automatically refresh the web token or say this is just a proof of concept).
+
+
+# Server - Spotify API
+## Read API, figure out how to test and make valid calls as well as write code to abstract the usage of the spotify API.
+
+**Video:**
+
+![Spotify API Demo](https://youtu.be/r10CKiQ-geQ)
+
+![Spotify API (Additional Demo)](https://youtu.be/z0pMYl6-UWU)
+
+**Deliverable:** 
+
+Create a script that can query the Spotify API based on an input. Be able to parse a couple of different voice-command-like inputs and use them to query the API, e.g. "Play Despacito." Look into problems with using the Spotify API and using tokens.
+
+**Process:**
+
+First, for the Spotify API, we created a script that is able to generate a spotify token given a client ID and a client secret. Using this token, we created another method, `parse_voice_input(voice_input)` that parses the given voice input, extracts a song title if the command is telling the player to play a specific song, and returns the song itself.
+
+Using the song title, we then use it in a GET request to the Spotify API in the `send_song_name(song)’ method. This then sends the song title as well as the query type, which for songs is `track` and limits the response to just one since we only want one returned song to play. If no song matches the query, then we return an error message, else we extract the Spotify URI or the song as well as any external links to play the song.
+
+In terms of problems with using the Spotify API, the main issue is that tokens expire every hour. The best way to get around this would be to have a check on whether the token has expired and if so, then use our method `get_spotify_token()` to create a new one.
+
+
+
+
+
+# Server - Requests Database/Queue
+## Design database structure for the song queue along with high-level requests handler overview.
+
+**Video:**
+
+![Server Requests and Database Demo](https://youtu.be/Hn7UDht9yGE)
+
+**Deliverable:** 
+
+Show that example insert and select SQL commands work as intended. Create scripts to manage and maintain a couple of "groups" within the database representing different groups/queues, allow for Postman to send working posts for different group queues.
+
+**Process: **
+
+We created a test file and the requests handler to parse different POST and GET requests. We tested both locally with the test file and on Postman after copying the server.py file onto our team15 server. The file contains the setup for our database along with INSERT and SELECT SQL commands based on the HTTP Request format. Furthermore, we added specific logic to handle groups and passwords so that we can store which songs correspond to a group's queue.
+
+In terms of our local test file, we made one to ensure that when we made certain POST requests with different data, we would trigger different database and queue actions. We tested all the different kinds of actions, along with valid and invalid group names and passwords. Furthermore, for GET requests, we wanted to ensure that we could get the songs that belong to a certain group correctly along with checking that a group existed before querying our database.
+
+This part was not too difficult, though testing using the test file was done locally since we were unable to put our Git repo onto the server. The test file could be run by calling 'python3 server/server_test.py -v' from the git repo, which should output ok and pass 11 different test cases.
+<style class="fallback">body{visibility:hidden}</style><script>markdeepOptions={tocStyle:'auto'};</script>
+<!-- Markdeep: --><script src="https://casual-effects.com/markdeep/latest/markdeep.min.js?" charset="utf-8"></script>

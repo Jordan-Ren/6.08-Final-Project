@@ -1,0 +1,109 @@
+
+     <meta charset="utf-8" emacsmode="-*- markdown -*-"><link rel="stylesheet" href="https://casual-effects.com/markdeep/latest/slate.css?">
+
+
+     **6.08 Final Project Week 2 Deliverables/Demos Update: Team 15**
+
+Group A: Tue 3-3:30P
+
+David He (dhe127), Sohini Kar (skar), Alex Ellison (acelli), Brandon Yue (byue), Jordan Ren (jordanr1)
+
+Here are updates for our Week 2 Deliverables and Demos
+
+# ESP32 - Lights
+## Create basic design patterns for light shows (pulse, fill from left to right, etc.)
+
+**Videos:**
+
+![ESP32 Lights](https://youtu.be/053C2ukaD4o)
+
+**Deliverable:** 
+
+Show lights pulsing and filling across the strip from left to right and right to left based on calls to different functions. Hardcode lightshows for 2-4 different genres (code can be blocking).
+
+**Process:**
+
+We again used the LED light strip connected to the Arduino. Here, we hardcoded the light strip to display different light shows depending on genre; we coded rock music, pop music, and noise music.
+
+For rock, we implemented separate for loops to be run in sequence before looping, filling the strip from left to right and left to right with regular, light, and lightest blue, red, and green, as well as dark/none. The strip fills in sequences of 3 each: for example, for blue, we first fill up the strip half of the way with equal portions of blue, light blue, and lightest blue. Next, we fill up the strip to ¾ of the way, with equal portions again. Finally, we fill up the whole way. This gives a “bouncing” effect. We duplicate this with red and green afterwards. We also slow down the filling by altering how many steps are taken at every loop.
+
+For pop, we used blocking code to create a multicolor, “poppy” feel. A standard pop song is about 120 beats per minute, which is a beat every half second. So, at this interval, each LED lights up with probability 50% with a random color, 25% with a color closer to red (to account for aesthetics), and 25% empty/none to give some variety.
+
+For noise, we have a for loop representing the strip transitioning as a rainbow. However, we then apply code to convert some spots to pure white, and some spots to empty. This gives the whole strip a blinking, “noisy” feel.
+
+# ESP32 - Voice Selection
+## Ensure the user can re-request a song if the song returned by the server is incorrect
+
+**Video:**
+
+![ESP32 Voice Selection Demo](https://youtu.be/Az5K4-ezc90)
+
+**Deliverable:** 
+
+Demonstrate how to re-request using a phrase like “play a song with the same name”. Implement an error-checking mechanism, like a two-step button-press check that the user can do before actually sending the microphone data to validate the input is correct. If the input is incorrect, have a different button-press allow the user to re-record. If the input is correct, have a button-press to send the input as a GET to the endpoint at http://608dev-2.net/sandbox/sc/team15/final/voice_text_input.py.
+
+**Process:**
+
+Here we implemented a state machine with two different states, one for recording audio input, and one in which the user can decide to re-record a message or send the audio input to the server. If the user decides to re-record the old audio data is scrapped and the user is able to record audio from the first state again. If the user chooses to send their message, then the audio transcript will be parsed and the corresponding action will be sent to the server as a POST request. In the POST response the resulting action is displayed. We decided while implementing this week’s deliverables that a specific request such as “play a song with the same name” would be less helpful than re-requesting a song with more specific details about the song such as the artist name. This feature will likely be implemented in next week’s deliverables.
+
+# ESP32/Server - Playing songs
+## Add queue data to the web page
+
+**Video:**
+
+![SDK and Queue Demo](https://youtu.be/stfPUVgt5JE)
+
+**Deliverable:**
+
+Create a queue for songs on the web page based on the database. Use the SDK/API or a general script connected to the DB to display the database data onto the web page. Try to figure out methods for playing the songs from the database information, and what information is necessary to control playing a song. If necessary or possible (depending on how files get sandboxed on the server), create a script to regularly update the API token.
+
+**Process:**
+
+We will get the queue directly from the Spotify SDK/API since the database stores song requests (queued in). Our server database is not the actual Spotify queue, just the client song requests. We use the Spotify WebPlayerSDK to get information from our Spotify account regarding the current song playing and the next two songs (It only returns the next two songs in a queue). 
+
+Our index.html file will prompt for a user group input. After the user provides their group name, we will retrieve their token (updated manually) and connect to the WebPlayerSDK. Using some javascript, we are able to retrieve real-time queue information for the Spotify account. 
+
+We investigated methods for playing songs, which turns out to be directly linked to our Spotify API team, as we will need to use Song URIs to play songs. This is evident from the documentation found here: [playing songs documentation](https://developer.spotify.com/documentation/web-playback-sdk/reference/#playing-a-spotify-uri).
+
+Something to note, we discovered what may be a potential problem for our group: Spotify doesn’t legally allow a user to listen to songs on more than one device. This is an issue we need to discuss at our next team meeting, as this changes the direction we want our project to go in. Maybe a new direction would be allowing clients to rate each others’ song requests.
+
+# Server - Spotify API
+## Implement and test the web player to play a song given a spotify URI
+
+**Video:**
+
+![Spotify API Demo](https://youtu.be/e-dEJOcDwhs)
+
+**Deliverable:** 
+
+Create a library of functions. Expand the voice input parsing to translate each possible function or command into an edit to the database. Figure out what information needs to be parsed from the Spotify API and put into the database, e.g. song titles, genres, artist, song length. If necessary or possible (depending on how files get sandboxed on the server), create a script to regularly update the API token.
+
+**Process:**
+
+First, we switched over to using a helpful python library to allow us to more easily handle authentication without having to manually copy and past the tokens we were generating last time.
+
+We then used the framework we built last time and implemented a couple basic commands so that we were able to test adding songs to the database, clearing the queue, and grabbing the data from the queue. This was mostly for testing purposes and we will implement with the other subteams' work later as our main goal this week was to figure out what features of the songs we wanted to use.
+
+The pipeline of our api now works as follows:
+*Send a song title to the spotify api in order to search for it and return a track uri and a url.
+*Using this uri, send another request to spotify to get audio features. Out of the features returned we use tempo, energy, time_signature, and danceability. Next we make another call to the spotify api in order to get song analysis. This gives us the segments that make up the song from which we take the start time, duration, and loudness of each section.
+*All of these features are then added into our queue database along with the current time, the group name, the song name, and the uri of the song.
+
+The main challenges this week were dealing with environment variables and authentication on the server. The library we are using to ease authentication tokens has the ability to help out with oauth2 so that we can have access to play music on a users device and do other user level stuff, but it is not playing nicely with the 608 server so we are going to have to look into solutions to this. For the time being though, the simple token authentication works for the purpose of getting song information which was our goal for the week.
+
+
+# Server - Requests Database/Queue
+## Add functionality to insert new song requests, get the top song on the queue, and remove that song from the database
+
+**Video:**
+
+![Server Requests and Database Demo](https://youtu.be/iQkeF5hhbxA)
+
+**Deliverable:** 
+
+Show that we can insert new songs and delete played songs in our database via timestamps or handle updating when the song is done. Be able to return useful information of the current song or next 2 songs, maybe add functionality for regular posts on the top songs to the source managing playing the songs.
+
+**Process: **
+We have added in functionality to insert any song we want as well as delete the most recent song played in the database. We delete songs by finding the song with the oldest time stamp and then deleting the song based on time stamp. Information on the current songs can be returned by sending a GET request to the server, which finds the oldest four songs in the database and returns all information regarding those songs. Furthermore, actions of skipping a song or having the current song finished were implemented. Skipping a song or finishing a song can be done by removing the oldest song in the database, then returning the second-oldest song in the database. 
+<style class="fallback">body{visibility:hidden}</style><script>markdeepOptions={tocStyle:'auto'};</script>
+<!-- Markdeep: --><script src="https://casual-effects.com/markdeep/latest/markdeep.min.js?" charset="utf-8"></script>
